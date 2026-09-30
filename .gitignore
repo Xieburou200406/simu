@@ -1,0 +1,6 @@
+# WorkBuddy 内部数据不进仓库
+.workbuddy/
+
+# 系统文件
+Thumbs.db
+Desktop.ini

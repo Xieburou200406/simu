@@ -1,0 +1,1986 @@
+{
+ "qs-gt-0044": {
+  "id": "qs-gt-0044",
+  "module": "qs",
+  "q": "为什么 Vol/Sml 平滑要“去趋势”？",
+  "options": [
+   "直接取中值",
+   "先剔除远期变动解释的部分再 EMA（贴 fwd 走的部分不进曲线）",
+   "跳变即停机",
+   "与 Fwd 用同一函数"
+  ],
+  "feedback": {
+   "answer": "先剔除远期变动解释的部分再 EMA（贴 fwd 走的部分不进曲线）",
+   "correct": false,
+   "explain": "认为隐含 vol/sml 一部分变动只是贴着 fwd 走。"
+  }
+ },
+ "qs-gt-0118": {
+  "id": "qs-gt-0118",
+  "module": "qs",
+  "q": "产品 mx02_wk_etf 属于哪个池？",
+  "options": [
+   "etf",
+   "etf（变体1）",
+   "com",
+   "csi"
+  ],
+  "feedback": {
+   "answer": "etf",
+   "correct": true,
+   "explain": "看产品名后缀 _etf，属于 etf 池。"
+  }
+ },
+ "qs-gt-0046": {
+  "id": "qs-gt-0046",
+  "module": "qs",
+  "q": "|smoothed−implied| ≥ 阈值时触发什么？",
+  "options": [
+   "静默丢弃",
+   "直接重启",
+   "切 Manual 模式并告警，任一跳变置 cPanic=1",
+   "只记录不停"
+  ],
+  "feedback": {
+   "answer": "切 Manual 模式并告警，任一跳变置 cPanic=1",
+   "correct": false,
+   "explain": "跳变保护：非 Manual 模式下检测超阈即切手动。"
+  }
+ },
+ "qs-gt-0008": {
+  "id": "qs-gt-0008",
+  "module": "qs",
+  "q": "页面上的 Delta 是谁算的？",
+  "options": [
+   "交易所推送",
+   "模型算的 Implied Delta（来自定价曲线 cUsed*），不是交易所给的",
+   "券商系统",
+   "收盘后批处理"
+  ],
+  "feedback": {
+   "answer": "模型算的 Implied Delta（来自定价曲线 cUsed*），不是交易所给的",
+   "correct": false,
+   "explain": "曲线参数跑偏，Delta 读数跟着跑偏——锚定检测盯定价参数的原因之一。"
+  }
+ },
+ "qs-gt-0115": {
+  "id": "qs-gt-0115",
+  "module": "qs",
+  "q": "产品名 mx01_yh_etf 中的 yh 表示哪家券商？",
+  "options": [
+   "国泰君安",
+   "银河",
+   "国贸",
+   "光大"
+  ],
+  "feedback": {
+   "answer": "银河",
+   "correct": false,
+   "explain": "命名规则：<系列><编号>_<券商>_<池>，yh=银河。"
+  }
+ },
+ "qs-gt-0015": {
+  "id": "qs-gt-0015",
+  "module": "qs",
+  "q": "zcf 引擎的定时驱动周期是？",
+  "options": [
+   "100ms QTimer",
+   "1s QTimer",
+   "事件驱动无定时",
+   "10ms QTimer"
+  ],
+  "feedback": {
+   "answer": "10ms QTimer",
+   "correct": false,
+   "explain": "另有 cCurveFittingFreq 节流：距上次触发不足该毫秒数直接返回。"
+  }
+ },
+ "qs-gt-0053": {
+  "id": "qs-gt-0053",
+  "module": "qs",
+  "q": "zcf 对 call delta 做什么约束？",
+  "options": [
+   "无约束",
+   "按成交量加权",
+   "沿 strike 递增强制 call delta 递减且 ≥0（put = call − 1）",
+   "只约束平值"
+  ],
+  "feedback": {
+   "answer": "沿 strike 递增强制 call delta 递减且 ≥0（put = call − 1）",
+   "correct": false,
+   "explain": "防曲线毛刺导致 delta 跳变，zarb 侧 TvGen 同样逻辑。"
+  }
+ },
+ "qs-gt-0121": {
+  "id": "qs-gt-0121",
+  "module": "qs",
+  "q": "产品名 tl01_gd_etf 中的 gd 表示哪家券商？",
+  "options": [
+   "国泰君安",
+   "海通",
+   "国贸",
+   "光大"
+  ],
+  "feedback": {
+   "answer": "光大",
+   "correct": false,
+   "explain": "命名规则：<系列><编号>_<券商>_<池>，gd=光大。"
+  }
+ },
+ "qs-gt-0056": {
+  "id": "qs-gt-0056",
+  "module": "qs",
+  "q": "tte 用工作日还是自然日？",
+  "options": [
+   "TTE 按工作日/252；DF 按自然日/365 日内插值",
+   "均 360 天",
+   "均工作日",
+   "均自然日"
+  ],
+  "feedback": {
+   "answer": "TTE 按工作日/252；DF 按自然日/365 日内插值",
+   "correct": true,
+   "explain": "剔除周末与节假日，日内按当日已交易时长插值 pct_day。"
+  }
+ },
+ "qs-gt-0075": {
+  "id": "qs-gt-0075",
+  "module": "qs",
+  "q": "PendingRisk 风控闸的触发条件是？",
+  "options": [
+   "仅告警",
+   "计成交",
+   "计 lost，超阈则 PendingRiskBreached，quote/IOC 全停",
+   "自动补单"
+  ],
+  "feedback": {
+   "answer": "计 lost，超阈则 PendingRiskBreached，quote/IOC 全停",
+   "correct": false,
+   "explain": "LostCxlTime 超时未确认撤单计数。"
+  }
+ },
+ "qs-gt-0026": {
+  "id": "qs-gt-0026",
+  "module": "qs",
+  "q": "左栏 CshΔ 列是什么？",
+  "options": [
+   "当日盈亏金额",
+   "= Δ × 标的乘数 × 标的价格，即敞口的名义本金（元）",
+   "成交额",
+   "保证金占用"
+  ],
+  "feedback": {
+   "answer": "= Δ × 标的乘数 × 标的价格，即敞口的名义本金（元）",
+   "correct": false,
+   "explain": "「元 / 1% 标的变动」的敏感性口径。"
+  }
+ },
+ "qs-gt-0105": {
+  "id": "qs-gt-0105",
+  "module": "qs",
+  "q": "产品名 hy01_yh_etf 中的 yh 表示哪家券商？",
+  "options": [
+   "国泰君安",
+   "银河",
+   "光大",
+   "国贸"
+  ],
+  "feedback": {
+   "answer": "银河",
+   "correct": false,
+   "explain": "命名规则：<系列><编号>_<券商>_<池>，yh=银河。"
+  }
+ },
+ "qs-gt-0006": {
+  "id": "qs-gt-0006",
+  "module": "qs",
+  "q": "zarb 的定位是什么？",
+  "options": [
+   "风控报表",
+   "交易引擎：消费曲线定价并下单",
+   "行情转发",
+   "参数托管"
+  ],
+  "feedback": {
+   "answer": "交易引擎：消费曲线定价并下单",
+   "correct": false,
+   "explain": "zarb = 套利交易引擎，zcf = 定价中枢。"
+  }
+ },
+ "qs-gt-0090": {
+  "id": "qs-gt-0090",
+  "module": "qs",
+  "q": "合成（parity/box）交易的限次参数是？",
+  "options": [
+   "QuoteHaltTime",
+   "MaxCxlRate",
+   "OrderThrottle",
+   "SyntCount / SyntLimit"
+  ],
+  "feedback": {
+   "answer": "SyntCount / SyntLimit",
+   "correct": false,
+   "explain": "box 走 ArbFlag::BoxOrder，限次防过度占用。"
+  }
+ },
+ "qs-gt-0123": {
+  "id": "qs-gt-0123",
+  "module": "qs",
+  "q": "产品名 tl01_yh_etf 中的 yh 表示哪家券商？",
+  "options": [
+   "银河",
+   "国泰君安",
+   "国贸",
+   "光大"
+  ],
+  "feedback": {
+   "answer": "银河",
+   "correct": true,
+   "explain": "命名规则：<系列><编号>_<券商>_<池>，yh=银河。"
+  }
+ },
+ "qs-gt-0049": {
+  "id": "qs-gt-0049",
+  "module": "qs",
+  "q": "zcf 发布 Greeks 的范围是？",
+  "options": [
+   "全月全部期权（不限拟合窗口）",
+   "仅拟合窗口内",
+   "仅持仓的",
+   "仅 ATM 附近"
+  ],
+  "feedback": {
+   "answer": "全月全部期权（不限拟合窗口）",
+   "correct": true,
+   "explain": "拟合窗口只影响反推参数，定价发布覆盖全月。"
+  }
+ },
+ "qs-gt-0050": {
+  "id": "qs-gt-0050",
+  "module": "qs",
+  "q": "calc_tv 给哪些期权定价发布？",
+  "options": [
+   "仅拟合窗口内",
+   "仅 ATM 附近",
+   "全月全部期权（不限拟合窗口）",
+   "仅持仓的"
+  ],
+  "feedback": {
+   "answer": "全月全部期权（不限拟合窗口）",
+   "correct": false,
+   "explain": "拟合窗口只影响反推参数，定价发布覆盖全月。"
+  }
+ },
+ "qs-gt-0010": {
+  "id": "qs-gt-0010",
+  "module": "qs",
+  "q": "产品名 cx01_gj_etf 的结构是？",
+  "options": [
+   "策略系列+编号_券商编码_池类型",
+   "服务器_公司_券商",
+   "随机字符串",
+   "日期_柜台_池"
+  ],
+  "feedback": {
+   "answer": "策略系列+编号_券商编码_池类型",
+   "correct": true,
+   "explain": "例：cx01_gj_etf = cx 系列 01 号、gj 券商、etf 池。"
+  }
+ },
+ "qs-gt-0035": {
+  "id": "qs-gt-0035",
+  "module": "qs",
+  "q": "z 中 z 的定义是？",
+  "options": [
+   "ln(strike/atm)·tte",
+   "ln(atm/strike)/√tte",
+   "strike/atm",
+   "(atm−strike)/tte"
+  ],
+  "feedback": {
+   "answer": "ln(atm/strike)/√tte",
+   "correct": false,
+   "explain": "对数在货币性除以剩余时间平方根。"
+  }
+ },
+ "qs-gt-0096": {
+  "id": "qs-gt-0096",
+  "module": "qs",
+  "q": "产品 cx01_yh_etf 属于哪个池？",
+  "options": [
+   "com",
+   "csi",
+   "etf（变体1）",
+   "etf"
+  ],
+  "feedback": {
+   "answer": "etf",
+   "correct": false,
+   "explain": "看产品名后缀 _etf，属于 etf 池。"
+  }
+ },
+ "qs-gt-0086": {
+  "id": "qs-gt-0086",
+  "module": "qs",
+  "q": "美式 put 与欧式 call 的 Greeks 数值差分区别是？",
+  "options": [
+   "都不用差分",
+   "欧式带 fwd 曲线联动（sticky-delta 类），美式 put 退化为朴素差分",
+   "两者完全相同",
+   "美式更精确"
+  ],
+  "feedback": {
+   "answer": "欧式带 fwd 曲线联动（sticky-delta 类），美式 put 退化为朴素差分",
+   "correct": false,
+   "explain": "fwd 扰动时 vol/sml 按 SSR·VCR/SCR 联动，把 spot-vol 相关编进 delta。"
+  }
+ },
+ "qs-gt-0057": {
+  "id": "qs-gt-0057",
+  "module": "qs",
+  "q": "zarb 有哪三条执行流？",
+  "options": [
+   "行情线程、算法线程（主循环）、TvGen 定价线程",
+   "四线程",
+   "单线程",
+   "两线程"
+  ],
+  "feedback": {
+   "answer": "行情线程、算法线程（主循环）、TvGen 定价线程",
+   "correct": true,
+   "explain": "MD 与参数各自入 SharedBuffer，定价线程与算法线程换数。"
+  }
+ },
+ "qs-gt-0103": {
+  "id": "qs-gt-0103",
+  "module": "qs",
+  "q": "产品名 hy01_nh_etf 中的 nh 表示哪家券商？",
+  "options": [
+   "国贸",
+   "光大",
+   "南华",
+   "国泰君安"
+  ],
+  "feedback": {
+   "answer": "南华",
+   "correct": false,
+   "explain": "命名规则：<系列><编号>_<券商>_<池>，nh=南华。"
+  }
+ },
+ "qs-gt-0080": {
+  "id": "qs-gt-0080",
+  "module": "qs",
+  "q": "日终对曲线参数的处理是？",
+  "options": [
+   "Used* 存档为 Used*Eod，全部 expiry 切 Manual（次日从手动起步）",
+   "无操作",
+   "清空参数",
+   "直接关机"
+  ],
+  "feedback": {
+   "answer": "Used* 存档为 Used*Eod，全部 expiry 切 Manual（次日从手动起步）",
+   "correct": true,
+   "explain": "开盘前从手动值起步，避免用旧曲线自动交易。"
+  }
+ },
+ "qs-gt-0102": {
+  "id": "qs-gt-0102",
+  "module": "qs",
+  "q": "产品 hy01_nh_etf 属于哪个池？",
+  "options": [
+   "com",
+   "etf",
+   "etf（变体1）",
+   "csi"
+  ],
+  "feedback": {
+   "answer": "etf",
+   "correct": false,
+   "explain": "看产品名后缀 _etf，属于 etf 池。"
+  }
+ },
+ "qs-gt-0013": {
+  "id": "qs-gt-0013",
+  "module": "qs",
+  "q": "delta 损失排查手册是？",
+  "options": [
+   "system/delta-loss-runbook.md",
+   "maintenance.md",
+   "overview.md",
+   "qsj-ssh.md"
+  ],
+  "feedback": {
+   "answer": "system/delta-loss-runbook.md",
+   "correct": true,
+   "explain": "delta 损失排查见 delta-loss-runbook.md。"
+  }
+ },
+ "qs-gt-0077": {
+  "id": "qs-gt-0077",
+  "module": "qs",
+  "q": "zarb 的下单链路是？",
+  "options": [
+   "直接写柜台",
+   "ArbOrderMgr → RzOmsExchConnector → RzOms → CTP",
+   "邮件接口",
+   "webhook"
+  ],
+  "feedback": {
+   "answer": "ArbOrderMgr → RzOmsExchConnector → RzOms → CTP",
+   "correct": false,
+   "explain": "IOC/Stack/Quote/Manual 四类单含价格 bias 校验。"
+  }
+ },
+ "qs-gt-0033": {
+  "id": "qs-gt-0033",
+  "module": "qs",
+  "q": "Wing 波动率曲线的公式形态是？",
+  "options": [
+   "σ = vol·e^z",
+   "常数微笑",
+   "σ = a+b/z",
+   "σ = vol + sml·z + 0.5·k·z²（两翼 k 分别取 KtC/KtP）"
+  ],
+  "feedback": {
+   "answer": "σ = vol + sml·z + 0.5·k·z²（两翼 k 分别取 KtC/KtP）",
+   "correct": false,
+   "explain": "z = ln(atm/strike)/√tte，两翼二次项分别用 KtC/KtP。"
+  }
+ },
+ "qs-gt-0098": {
+  "id": "qs-gt-0098",
+  "module": "qs",
+  "q": "产品 dx01_gj_etf 属于哪个池？",
+  "options": [
+   "csi",
+   "etf（变体1）",
+   "com",
+   "etf"
+  ],
+  "feedback": {
+   "answer": "etf",
+   "correct": false,
+   "explain": "看产品名后缀 _etf，属于 etf 池。"
+  }
+ },
+ "qs-gt-0016": {
+  "id": "qs-gt-0016",
+  "module": "qs",
+  "q": "QS 合作公司共有几家？",
+  "options": [
+   "3 家",
+   "5 家",
+   "8 家",
+   "4 家（大树/量魁/天行健/鑫鼎）"
+  ],
+  "feedback": {
+   "answer": "4 家（大树/量魁/天行健/鑫鼎）",
+   "correct": false,
+   "explain": "4 家公司。"
+  }
+ },
+ "qs-gt-0091": {
+  "id": "qs-gt-0091",
+  "module": "qs",
+  "q": "box 机会的频率限制？",
+  "options": [
+   "MaxCxlRate",
+   "OrderThrottle",
+   "QuoteHaltTime",
+   "SyntCount / SyntLimit"
+  ],
+  "feedback": {
+   "answer": "SyntCount / SyntLimit",
+   "correct": false,
+   "explain": "box 走 ArbFlag::BoxOrder，限次防过度占用。"
+  }
+ },
+ "qs-gt-0060": {
+  "id": "qs-gt-0060",
+  "module": "qs",
+  "q": "ParamSharedBuffer 存的是什么？",
+  "options": [
+   "行情/参数写入后由算法线程消费（参数含 cUsed*）",
+   "日志队列",
+   "订单回报缓存",
+   "风控计数"
+  ],
+  "feedback": {
+   "answer": "行情/参数写入后由算法线程消费（参数含 cUsed*）",
+   "correct": true,
+   "explain": "MD 2000 槽、参数 5000 槽。"
+  }
+ },
+ "qs-gt-0001": {
+  "id": "qs-gt-0001",
+  "module": "qs",
+  "q": "QS 在役产品总数（2026-09 口径）是？",
+  "options": [
+   "35 个",
+   "46 个在役（47 注册，dstl 二对一）",
+   "40 个",
+   "33 个"
+  ],
+  "feedback": {
+   "answer": "46 个在役（47 注册，dstl 二对一）",
+   "correct": false,
+   "explain": "口径：47 注册 = 46 在役，dstl 配置二对一。"
+  }
+ },
+ "qs-gt-0029": {
+  "id": "qs-gt-0029",
+  "module": "qs",
+  "q": "zcf 拟合的状态向量包含哪 4 个参数？",
+  "options": [
+   "行权价、到期日",
+   "利率、股息",
+   "vol、sml（偏度）、ktc、ktp（两翼峰度）",
+   "仅波动率"
+  ],
+  "feedback": {
+   "answer": "vol、sml（偏度）、ktc、ktp（两翼峰度）",
+   "correct": false,
+   "explain": "OneKurt 模式下 ktc/ktp 合并为 3 参数。"
+  }
+ },
+ "qs-gt-0019": {
+  "id": "qs-gt-0019",
+  "module": "qs",
+  "q": "QS 产品覆盖的券商编码有几个？",
+  "options": [
+   "10 个",
+   "8 个（gd/gj/gm/ht/nh/wk/yh/zs）",
+   "6 个",
+   "4 个"
+  ],
+  "feedback": {
+   "answer": "8 个（gd/gj/gm/ht/nh/wk/yh/zs）",
+   "correct": false,
+   "explain": "8 家券商。"
+  }
+ },
+ "qs-gt-0054": {
+  "id": "qs-gt-0054",
+  "module": "qs",
+  "q": "发布的 delta 有何单调性保护？",
+  "options": [
+   "无约束",
+   "只约束平值",
+   "沿 strike 递增强制 call delta 递减且 ≥0（put = call − 1）",
+   "按成交量加权"
+  ],
+  "feedback": {
+   "answer": "沿 strike 递增强制 call delta 递减且 ≥0（put = call − 1）",
+   "correct": false,
+   "explain": "防曲线毛刺导致 delta 跳变，zarb 侧 TvGen 同样逻辑。"
+  }
+ },
+ "qs-gt-0092": {
+  "id": "qs-gt-0092",
+  "module": "qs",
+  "q": "产品 cx01_gj_etf 属于哪个池？",
+  "options": [
+   "com",
+   "csi",
+   "etf（变体1）",
+   "etf"
+  ],
+  "feedback": {
+   "answer": "etf",
+   "correct": false,
+   "explain": "看产品名后缀 _etf，属于 etf 池。"
+  }
+ },
+ "qs-gt-0037": {
+  "id": "qs-gt-0037",
+  "module": "qs",
+  "q": "TV 定价：欧式与美式 put 分别用什么模型？",
+  "options": [
+   "都用二叉树",
+   "都用蒙特卡洛",
+   "欧式/call 用 BS，美式 put 用 Bjerksund",
+   "都用 BS"
+  ],
+  "feedback": {
+   "answer": "欧式/call 用 BS，美式 put 用 Bjerksund",
+   "correct": false,
+   "explain": "tte≤0 时直接返回内在价值。"
+  }
+ },
+ "qs-gt-0074": {
+  "id": "qs-gt-0074",
+  "module": "qs",
+  "q": "合成市场与标的背离时定价远期怎么处理？",
+  "options": [
+   "保持不变",
+   "直接弃用合成盘",
+   "把定价远期夹向可成交的合成侧（贴向 converse_mid）",
+   "取算术平均"
+  ],
+  "feedback": {
+   "answer": "把定价远期夹向可成交的合成侧（贴向 converse_mid）",
+   "correct": false,
+   "explain": "连续同向时夹在 [spot−平滑基差, 合成中间] 内。"
+  }
+ },
+ "qs-gt-0085": {
+  "id": "qs-gt-0085",
+  "module": "qs",
+  "q": "aAccuCashDelta 的量纲换算关系？",
+  "options": [
+   "≈ aAccuDelta × cUsedFwd × 乘数（元 / 1% 标的变动）",
+   "= aAccuVega × 100",
+   "无固定关系",
+   "= PnL × 天数"
+  ],
+  "feedback": {
+   "answer": "≈ aAccuDelta × cUsedFwd × 乘数（元 / 1% 标的变动）",
+   "correct": true,
+   "explain": "实测 L1 验证误差 0.05%。"
+  }
+ },
+ "qs-gt-0067": {
+  "id": "qs-gt-0067",
+  "module": "qs",
+  "q": "弹性调整的定价语义是？",
+  "options": [
+   "定价不变",
+   "直接停机",
+   "敞口越大越激进加仓",
+   "敞口越大，定价越往促使平敞口的方向压（如多 Vega→vol 调高）"
+  ],
+  "feedback": {
+   "answer": "敞口越大，定价越往促使平敞口的方向压（如多 Vega→vol 调高）",
+   "correct": false,
+   "explain": "adjusted = targ·alph + (1−alph)·smth + clamp((offs−pos)·elas/unit, ±rstc)。"
+  }
+ },
+ "qs-gt-0081": {
+  "id": "qs-gt-0081",
+  "module": "qs",
+  "q": "交易进行中修改曲线模式会怎样？",
+  "options": [
+   "只告警",
+   "随时可改",
+   "IOC/LMT/Quote/Mark 任一开着则拒改并回滚",
+   "需重启"
+  ],
+  "feedback": {
+   "answer": "IOC/LMT/Quote/Mark 任一开着则拒改并回滚",
+   "correct": false,
+   "explain": "交易开着不许改曲线模式/关键参数。"
+  }
+ },
+ "qs-gt-0007": {
+  "id": "qs-gt-0007",
+  "module": "qs",
+  "q": "qs_stk_g1 池的在役产品数是？",
+  "options": [
+   "g1 为 20、csi 为 11",
+   "均为 46",
+   "g1 为 11、csi 为 20",
+   "g1 为 14、csi 为 1"
+  ],
+  "feedback": {
+   "answer": "g1 为 20、csi 为 11",
+   "correct": true,
+   "explain": "g1 20、csi 11、etf 14、com 1。"
+  }
+ },
+ "qs-gt-0117": {
+  "id": "qs-gt-0117",
+  "module": "qs",
+  "q": "产品名 mx02_gj_etf 中的 gj 表示哪家券商？",
+  "options": [
+   "国泰君安",
+   "光大",
+   "国贸",
+   "海通"
+  ],
+  "feedback": {
+   "answer": "国泰君安",
+   "correct": true,
+   "explain": "命名规则：<系列><编号>_<券商>_<池>，gj=国泰君安。"
+  }
+ },
+ "qs-gt-0089": {
+  "id": "qs-gt-0089",
+  "module": "qs",
+  "q": "对比窗口必须截到哪里？",
+  "options": [
+   "截到下一次开仓",
+   "截到收盘",
+   "截到整点",
+   "显式截到引擎属性最后一刷（平仓后 cUsed* 仍会刷到收盘，多算参数）"
+  ],
+  "feedback": {
+   "answer": "显式截到引擎属性最后一刷（平仓后 cUsed* 仍会刷到收盘，多算参数）",
+   "correct": false,
+   "explain": "实盘踩坑：误取 09:36 的 +37 点，正确为 09:33:54 的 +48 点。"
+  }
+ },
+ "qs-gt-0052": {
+  "id": "qs-gt-0052",
+  "module": "qs",
+  "q": "期权的 theta 锚点用？",
+  "options": [
+   "不计算 theta",
+   "TV(tte_eod) − TV(tte_sod)（SOD/EOD 锚点差）",
+   "前后 1 天差分",
+   "解析导数"
+  ],
+  "feedback": {
+   "answer": "TV(tte_eod) − TV(tte_sod)（SOD/EOD 锚点差）",
+   "correct": false,
+   "explain": "用日初/日末两个年化时间点重定价取差。"
+  }
+ },
+ "qs-gt-0078": {
+  "id": "qs-gt-0078",
+  "module": "qs",
+  "q": "订单最终经什么通道到场？",
+  "options": [
+   "直接写柜台",
+   "邮件接口",
+   "webhook",
+   "ArbOrderMgr → RzOmsExchConnector → RzOms → CTP"
+  ],
+  "feedback": {
+   "answer": "ArbOrderMgr → RzOmsExchConnector → RzOms → CTP",
+   "correct": false,
+   "explain": "IOC/Stack/Quote/Manual 四类单含价格 bias 校验。"
+  }
+ },
+ "qs-gt-0095": {
+  "id": "qs-gt-0095",
+  "module": "qs",
+  "q": "产品名 cx01_nh_etf 中的 nh 表示哪家券商？",
+  "options": [
+   "光大",
+   "国泰君安",
+   "南华",
+   "国贸"
+  ],
+  "feedback": {
+   "answer": "南华",
+   "correct": false,
+   "explain": "命名规则：<系列><编号>_<券商>_<池>，nh=南华。"
+  }
+ },
+ "qs-gt-0041": {
+  "id": "qs-gt-0041",
+  "module": "qs",
+  "q": "参数平滑用哪种方式？",
+  "options": [
+   "卡尔曼滤波",
+   "EMA（α 由频率与周期推导）",
+   "移动平均",
+   "不半滑"
+  ],
+  "feedback": {
+   "answer": "EMA（α 由频率与周期推导）",
+   "correct": false,
+   "explain": "α = 0.01^(freq_ms/1000/period_s)：period 秒后旧值权重衰减到 1%。"
+  }
+ },
+ "qs-gt-0051": {
+  "id": "qs-gt-0051",
+  "module": "qs",
+  "q": "theta 怎么计算？",
+  "options": [
+   "前后 1 天差分",
+   "TV(tte_eod) − TV(tte_sod)（SOD/EOD 锚点差）",
+   "不计算 theta",
+   "解析导数"
+  ],
+  "feedback": {
+   "answer": "TV(tte_eod) − TV(tte_sod)（SOD/EOD 锚点差）",
+   "correct": false,
+   "explain": "用日初/日末两个年化时间点重定价取差。"
+  }
+ },
+ "qs-gt-0023": {
+  "id": "qs-gt-0023",
+  "module": "qs",
+  "q": "1Krt 模式下 KtP 列为什么默认隐藏？",
+  "options": [
+   "数据缺失",
+   "无期权持仓",
+   "精度不足",
+   "单峰度模式下两翼共用一个系数（KtP ≡ KtC）"
+  ],
+  "feedback": {
+   "answer": "单峰度模式下两翼共用一个系数（KtP ≡ KtC）",
+   "correct": false,
+   "explain": "点 KtC 列头可展开；切 2Krt 后两翼独立才需分开看。"
+  }
+ },
+ "qs-gt-0043": {
+  "id": "qs-gt-0043",
+  "module": "qs",
+  "q": "Vol/Sml 的 EMA 有什么特殊处理？",
+  "options": [
+   "跳变即停机",
+   "直接取中值",
+   "与 Fwd 用同一函数",
+   "先剔除远期变动解释的部分再 EMA（贴 fwd 走的部分不进曲线）"
+  ],
+  "feedback": {
+   "answer": "先剔除远期变动解释的部分再 EMA（贴 fwd 走的部分不进曲线）",
+   "correct": false,
+   "explain": "认为隐含 vol/sml 一部分变动只是贴着 fwd 走。"
+  }
+ },
+ "qs-gt-0101": {
+  "id": "qs-gt-0101",
+  "module": "qs",
+  "q": "产品名 hy01_gj_etf 中的 gj 表示哪家券商？",
+  "options": [
+   "海通",
+   "国贸",
+   "国泰君安",
+   "光大"
+  ],
+  "feedback": {
+   "answer": "国泰君安",
+   "correct": false,
+   "explain": "命名规则：<系列><编号>_<券商>_<池>，gj=国泰君安。"
+  }
+ },
+ "qs-gt-0109": {
+  "id": "qs-gt-0109",
+  "module": "qs",
+  "q": "产品名 hy03_zs_etf 中的 zs 表示哪家券商？",
+  "options": [
+   "招商",
+   "国贸",
+   "国泰君安",
+   "光大"
+  ],
+  "feedback": {
+   "answer": "招商",
+   "correct": true,
+   "explain": "命名规则：<系列><编号>_<券商>_<池>，zs=招商。"
+  }
+ },
+ "qs-gt-0071": {
+  "id": "qs-gt-0071",
+  "module": "qs",
+  "q": "Market 模式的 mid_theo 怎么来？",
+  "options": [
+   "昨结价",
+   "ArbSSTv + MidTvDif(50ms EMA) − ss（仓位位移项）",
+   "最新成交价",
+   "盘口中位"
+  ],
+  "feedback": {
+   "answer": "ArbSSTv + MidTvDif(50ms EMA) − ss（仓位位移项）",
+   "correct": false,
+   "explain": "ss 由 StrikePos/SSElastic 决定，叠加双边保护边。"
+  }
+ },
+ "qs-gt-0069": {
+  "id": "qs-gt-0069",
+  "module": "qs",
+  "q": "Quote 报价有哪几种模式？",
+  "options": [
+   "单/双栏",
+   "IoC/Lmt",
+   "Tv / Market / Both / Neither",
+   "Passive/Aggressive"
+  ],
+  "feedback": {
+   "answer": "Tv / Market / Both / Neither",
+   "correct": false,
+   "explain": "TV 模式按报出尺寸后的敞口重定价；Market 模式用 mid_theo。"
+  }
+ },
+ "qs-gt-0042": {
+  "id": "qs-gt-0042",
+  "module": "qs",
+  "q": "cUsed* 之前的隐含参数平滑是？",
+  "options": [
+   "卡尔曼滤波",
+   "移动平均",
+   "EMA（α 由频率与周期推导）",
+   "不半滑"
+  ],
+  "feedback": {
+   "answer": "EMA（α 由频率与周期推导）",
+   "correct": false,
+   "explain": "α = 0.01^(freq_ms/1000/period_s)：period 秒后旧值权重衰减到 1%。"
+  }
+ },
+ "qs-gt-0031": {
+  "id": "qs-gt-0031",
+  "module": "qs",
+  "q": "参与拟合的期权如何筛选？",
+  "options": [
+   "只按虚实值",
+   "只按成交量",
+   "ATM 上下窗口 + |delta| 区间过滤",
+   "随机抽样"
+  ],
+  "feedback": {
+   "answer": "ATM 上下窗口 + |delta| 区间过滤",
+   "correct": false,
+   "explain": "窗口 [atm−PutNum, atm+CalNum) 内再用 delta 上下限过滤。"
+  }
+ },
+ "qs-gt-0009": {
+  "id": "qs-gt-0009",
+  "module": "qs",
+  "q": "zcf 与 zarb 之间如何传递参数？",
+  "options": [
+   "进程间 pub/sub（XCeEvent），zarb 侧入 ParamSharedBuffer",
+   "写数据库",
+   "共享文件",
+   "TCP 直连下单口"
+  ],
+  "feedback": {
+   "answer": "进程间 pub/sub（XCeEvent），zarb 侧入 ParamSharedBuffer",
+   "correct": true,
+   "explain": "部署上是两个进程，属性经 XCeEvent 发布订阅。"
+  }
+ },
+ "qs-gt-0047": {
+  "id": "qs-gt-0047",
+  "module": "qs",
+  "q": "Mark（盯市）参数怎么算？",
+  "options": [
+   "TV 折算",
+   "cImplied* 的滑窗均值（cMarkPts 长度，下限 100）",
+   "昨日收盘价",
+   "手工输入"
+  ],
+  "feedback": {
+   "answer": "cImplied* 的滑窗均值（cMarkPts 长度，下限 100）",
+   "correct": false,
+   "explain": "供 zarb 的 calc_marked_tv 估值/PnL 使用。"
+  }
+ },
+ "qs-gt-0011": {
+  "id": "qs-gt-0011",
+  "module": "qs",
+  "q": "为什么 Call Delta 累加前要做封顶修正？",
+  "options": [
+   "曲线手工调参可能产生局部毛刺，裸求导会放大成「高行权价 call Delta 更大」的非法形状",
+   "交易所要求",
+   "隐藏亏损",
+   "加快计算"
+  ],
+  "feedback": {
+   "answer": "曲线手工调参可能产生局部毛刺，裸求导会放大成「高行权价 call Delta 更大」的非法形状",
+   "correct": true,
+   "explain": "行权价越高的 call Delta 只能变小或持平（单调性）。"
+  }
+ },
+ "qs-gt-0032": {
+  "id": "qs-gt-0032",
+  "module": "qs",
+  "q": "zcf 拟合窗口除了 ATM ±张数还用什么过滤？",
+  "options": [
+   "只按成交量",
+   "ATM 上下窗口 + |delta| 区间过滤",
+   "随机抽样",
+   "只按虚实值"
+  ],
+  "feedback": {
+   "answer": "ATM 上下窗口 + |delta| 区间过滤",
+   "correct": false,
+   "explain": "窗口 [atm−PutNum, atm+CalNum) 内再用 delta 上下限过滤。"
+  }
+ },
+ "qs-gt-0073": {
+  "id": "qs-gt-0073",
+  "module": "qs",
+  "q": "动态远期校准（calc_dynamic_fwd）的作用是？",
+  "options": [
+   "把定价远期夹向可成交的合成侧（贴向 converse_mid）",
+   "直接弃用合成盘",
+   "保持不变",
+   "取算术平均"
+  ],
+  "feedback": {
+   "answer": "把定价远期夹向可成交的合成侧（贴向 converse_mid）",
+   "correct": true,
+   "explain": "连续同向时夹在 [spot−平滑基差, 合成中间] 内。"
+  }
+ },
+ "qs-gt-0122": {
+  "id": "qs-gt-0122",
+  "module": "qs",
+  "q": "产品 tl01_yh_etf 属于哪个池？",
+  "options": [
+   "csi",
+   "etf",
+   "etf（变体1）",
+   "com"
+  ],
+  "feedback": {
+   "answer": "etf",
+   "correct": false,
+   "explain": "看产品名后缀 _etf，属于 etf 池。"
+  }
+ },
+ "qs-gt-0083": {
+  "id": "qs-gt-0083",
+  "module": "qs",
+  "q": "Stack LMT 梯级单的核心策略是？",
+  "options": [
+   "如何取消订单",
+   "如何计算保证金",
+   "如何选择品种",
+   "何时允许改进 BBO、何时只 join 排队"
+  ],
+  "feedback": {
+   "answer": "何时允许改进 BBO、何时只 join 排队",
+   "correct": false,
+   "explain": "7 种状态机，受 MaxCxlRate 与 OrderThrottle 双重限频。"
+  }
+ },
+ "qs-gt-0107": {
+  "id": "qs-gt-0107",
+  "module": "qs",
+  "q": "产品名 hy03_ht_etf 中的 ht 表示哪家券商？",
+  "options": [
+   "国泰君安",
+   "国贸",
+   "光大",
+   "海通"
+  ],
+  "feedback": {
+   "answer": "海通",
+   "correct": false,
+   "explain": "命名规则：<系列><编号>_<券商>_<池>，ht=海通。"
+  }
+ },
+ "qs-gt-0114": {
+  "id": "qs-gt-0114",
+  "module": "qs",
+  "q": "产品 mx01_yh_etf 属于哪个池？",
+  "options": [
+   "csi",
+   "etf（变体1）",
+   "com",
+   "etf"
+  ],
+  "feedback": {
+   "answer": "etf",
+   "correct": false,
+   "explain": "看产品名后缀 _etf，属于 etf 池。"
+  }
+ },
+ "qs-gt-0012": {
+  "id": "qs-gt-0012",
+  "module": "qs",
+  "q": "曲线数据断供时 zarb 会怎样？",
+  "options": [
+   "只告警不停单",
+   "auto_turn_off 自动关交易",
+   "重启进程",
+   "继续用旧值交易"
+  ],
+  "feedback": {
+   "answer": "auto_turn_off 自动关交易",
+   "correct": false,
+   "explain": "UsedCurveAttr 发现 Staled 即关交易，曲线断供自动停。"
+  }
+ },
+ "qs-gt-0076": {
+  "id": "qs-gt-0076",
+  "module": "qs",
+  "q": "撤单超时未确认会计什么？",
+  "options": [
+   "自动补单",
+   "计成交",
+   "计 lost，超阈则 PendingRiskBreached，quote/IOC 全停",
+   "仅告警"
+  ],
+  "feedback": {
+   "answer": "计 lost，超阈则 PendingRiskBreached，quote/IOC 全停",
+   "correct": false,
+   "explain": "LostCxlTime 超时未确认撤单计数。"
+  }
+ },
+ "qs-gt-0061": {
+  "id": "qs-gt-0061",
+  "module": "qs",
+  "q": "IOC 尺寸公式 size = pnl_buf·aggressivity/theo_shift 的含义是？",
+  "options": [
+   "与毛利无关",
+   "固定手数",
+   "毛利越大下越多，自冲击越贵下越少",
+   "毛利越大下越少"
+  ],
+  "feedback": {
+   "answer": "毛利越大下越多，自冲击越贵下越少",
+   "correct": false,
+   "explain": "theo_shift 是吃进自身头寸后的价格总位移（自冲击成本）。"
+  }
+ },
+ "qs-gt-0021": {
+  "id": "qs-gt-0021",
+  "module": "qs",
+  "q": "zcf 拟合的合成远期基于什么关系？",
+  "options": [
+   "BS 定价公式",
+   "期货持仓成本",
+   "均值回归",
+   "C−P 平价关系（stk_fwd = (C−P)/df + K）"
+  ],
+  "feedback": {
+   "answer": "C−P 平价关系（stk_fwd = (C−P)/df + K）",
+   "correct": false,
+   "explain": "逐 strike 用认购认沽盘口构造远期区间，再投票取中点。"
+  }
+ },
+ "qs-gt-0068": {
+  "id": "qs-gt-0068",
+  "module": "qs",
+  "q": "敞口增大后 Zarb 如何调价？",
+  "options": [
+   "敞口越大，定价越往促使平敞口的方向压（如多 Vega→vol 调高）",
+   "直接停机",
+   "定价不变",
+   "敞口越大越激进加仓"
+  ],
+  "feedback": {
+   "answer": "敞口越大，定价越往促使平敞口的方向压（如多 Vega→vol 调高）",
+   "correct": true,
+   "explain": "adjusted = targ·alph + (1−alph)·smth + clamp((offs−pos)·elas/unit, ±rstc)。"
+  }
+ },
+ "qs-gt-0018": {
+  "id": "qs-gt-0018",
+  "module": "qs",
+  "q": "zcf 每个周期的七步流水线顺序是？",
+  "options": [
+   "先定价后拟合",
+   "TTE/DF → 隐含远期 → 平滑远期 → 隐含波动率 → 参数平滑 → Mark → TV发布",
+   "先 Mark 后远期",
+   "无固定顺序"
+  ],
+  "feedback": {
+   "answer": "TTE/DF → 隐含远期 → 平滑远期 → 隐含波动率 → 参数平滑 → Mark → TV发布",
+   "correct": false,
+   "explain": "顺序：df_and_mat → implied_fwd → smoothed_fwd → implied_vol → smooth → mark → tv。"
+  }
+ },
+ "qs-gt-0040": {
+  "id": "qs-gt-0040",
+  "module": "qs",
+  "q": "从市价反推单期权 IV 用什么数值方法？",
+  "options": [
+   "查表",
+   "线性插值",
+   "二分法（最多 30 次，价差<1e-6 收敛）",
+   "牛顿迭代"
+  ],
+  "feedback": {
+   "answer": "二分法（最多 30 次，价差<1e-6 收敛）",
+   "correct": false,
+   "explain": "calcImpliedVol 30 次二分。"
+  }
+ },
+ "qs-gt-0039": {
+  "id": "qs-gt-0039",
+  "module": "qs",
+  "q": "单点隐含波动率的求解方式是？",
+  "options": [
+   "查表",
+   "二分法（最多 30 次，价差<1e-6 收敛）",
+   "牛顿迭代",
+   "线性插值"
+  ],
+  "feedback": {
+   "answer": "二分法（最多 30 次，价差<1e-6 收敛）",
+   "correct": false,
+   "explain": "calcImpliedVol 30 次二分。"
+  }
+ },
+ "qs-gt-0065": {
+  "id": "qs-gt-0065",
+  "module": "qs",
+  "q": "篮子尺寸被哪 5 维限额裁剪？",
+  "options": [
+   "Delta/Gamma/Theta",
+   "仅 Delta/Vega",
+   "Delta / Vega / Skew / KtC / KtP",
+   "仅 Vega"
+  ],
+  "feedback": {
+   "answer": "Delta / Vega / Skew / KtC / KtP",
+   "correct": false,
+   "explain": "各维按（最大风险−等价风险）/单位风险限买卖量。"
+  }
+ },
+ "qs-gt-0124": {
+  "id": "qs-gt-0124",
+  "module": "qs",
+  "q": "产品 cx01_nh_csi 属于哪个池？",
+  "options": [
+   "com",
+   "csi",
+   "etf",
+   "csi（变体1）"
+  ],
+  "feedback": {
+   "answer": "csi",
+   "correct": false,
+   "explain": "看产品名后缀 _csi，属于 csi 池。"
+  }
+ },
+ "qs-gt-0014": {
+  "id": "qs-gt-0014",
+  "module": "qs",
+  "q": "Put Delta 怎么来？",
+  "options": [
+   "取 Call 的相反数",
+   "交易所给定",
+   "单独数值差分",
+   "Put Delta = 同行权价 Call Delta − 1（put-call 平价，关系永远严格成立）"
+  ],
+  "feedback": {
+   "answer": "Put Delta = 同行权价 Call Delta − 1（put-call 平价，关系永远严格成立）",
+   "correct": false,
+   "explain": "分开算反而可能被毛刺弄得对不上。"
+  }
+ },
+ "qs-gt-0094": {
+  "id": "qs-gt-0094",
+  "module": "qs",
+  "q": "产品 cx01_nh_etf 属于哪个池？",
+  "options": [
+   "com",
+   "etf",
+   "csi",
+   "etf（变体1）"
+  ],
+  "feedback": {
+   "answer": "etf",
+   "correct": false,
+   "explain": "看产品名后缀 _etf，属于 etf 池。"
+  }
+ },
+ "qs-gt-0005": {
+  "id": "qs-gt-0005",
+  "module": "qs",
+  "q": "aAccuDelta 计算中「÷标的乘数」的作用？",
+  "options": [
+   "单位统一：股指/商品除对冲期货乘数（单位=期货张数），ETF 除 1（单位=现货份数）",
+   "换算成金额",
+   "折算汇率",
+   "取整"
+  ],
+  "feedback": {
+   "answer": "单位统一：股指/商品除对冲期货乘数（单位=期货张数），ETF 除 1（单位=现货份数）",
+   "correct": true,
+   "explain": "期货张数正好就是 Delta 对冲要下的手数。"
+  }
+ },
+ "qs-gt-0027": {
+  "id": "qs-gt-0027",
+  "module": "qs",
+  "q": "波动率曲线拟合用什么算法？",
+  "options": [
+   "蒙特卡洛",
+   "牛顿法求根",
+   "梯度下降",
+   "Gauss-Newton（加权最小二乘，固定 5 轮）"
+  ],
+  "feedback": {
+   "answer": "Gauss-Newton（加权最小二乘，固定 5 轮）",
+   "correct": false,
+   "explain": "以市价与理论价之差为目标、vega 系敏感度为梯度，一次解 4 参数。"
+  }
+ },
+ "qs-gt-0110": {
+  "id": "qs-gt-0110",
+  "module": "qs",
+  "q": "产品 mx01_gj_etf 属于哪个池？",
+  "options": [
+   "csi",
+   "etf（变体1）",
+   "com",
+   "etf"
+  ],
+  "feedback": {
+   "answer": "etf",
+   "correct": false,
+   "explain": "看产品名后缀 _etf，属于 etf 池。"
+  }
+ },
+ "qs-gt-0099": {
+  "id": "qs-gt-0099",
+  "module": "qs",
+  "q": "产品名 dx01_gj_etf 中的 gj 表示哪家券商？",
+  "options": [
+   "国贸",
+   "国泰君安",
+   "光大",
+   "海通"
+  ],
+  "feedback": {
+   "answer": "国泰君安",
+   "correct": false,
+   "explain": "命名规则：<系列><编号>_<券商>_<池>，gj=国泰君安。"
+  }
+ },
+ "qs-gt-0100": {
+  "id": "qs-gt-0100",
+  "module": "qs",
+  "q": "产品 hy01_gj_etf 属于哪个池？",
+  "options": [
+   "etf",
+   "com",
+   "etf（变体1）",
+   "csi"
+  ],
+  "feedback": {
+   "answer": "etf",
+   "correct": true,
+   "explain": "看产品名后缀 _etf，属于 etf 池。"
+  }
+ },
+ "qs-gt-0030": {
+  "id": "qs-gt-0030",
+  "module": "qs",
+  "q": "曲线拟合同时反推的四个参数是？",
+  "options": [
+   "vol、sml（偏度）、ktc、ktp（两翼峰度）",
+   "行权价、到期日",
+   "仅波动率",
+   "利率、股息"
+  ],
+  "feedback": {
+   "answer": "vol、sml（偏度）、ktc、ktp（两翼峰度）",
+   "correct": true,
+   "explain": "OneKurt 模式下 ktc/ktp 合并为 3 参数。"
+  }
+ },
+ "qs-gt-0028": {
+  "id": "qs-gt-0028",
+  "module": "qs",
+  "q": "zcf 反推 vol/sml/ktc/ktp 用什么迭代法？",
+  "options": [
+   "Gauss-Newton（加权最小二乘，固定 5 轮）",
+   "蒙特卡洛",
+   "牛顿法求根",
+   "梯度下降"
+  ],
+  "feedback": {
+   "answer": "Gauss-Newton（加权最小二乘，固定 5 轮）",
+   "correct": true,
+   "explain": "以市价与理论价之差为目标、vega 系敏感度为梯度，一次解 4 参数。"
+  }
+ },
+ "qs-gt-0093": {
+  "id": "qs-gt-0093",
+  "module": "qs",
+  "q": "产品名 cx01_gj_etf 中的 gj 表示哪家券商？",
+  "options": [
+   "国贸",
+   "光大",
+   "海通",
+   "国泰君安"
+  ],
+  "feedback": {
+   "answer": "国泰君安",
+   "correct": false,
+   "explain": "命名规则：<系列><编号>_<券商>_<池>，gj=国泰君安。"
+  }
+ },
+ "qs-gt-0058": {
+  "id": "qs-gt-0058",
+  "module": "qs",
+  "q": "zarb 的线程模型是？",
+  "options": [
+   "行情线程、算法线程（主循环）、TvGen 定价线程",
+   "单线程",
+   "两线程",
+   "四线程"
+  ],
+  "feedback": {
+   "answer": "行情线程、算法线程（主循环）、TvGen 定价线程",
+   "correct": true,
+   "explain": "MD 与参数各自入 SharedBuffer，定价线程与算法线程换数。"
+  }
+ },
+ "qs-gt-0112": {
+  "id": "qs-gt-0112",
+  "module": "qs",
+  "q": "产品 mx01_nh_etf 属于哪个池？",
+  "options": [
+   "com",
+   "etf",
+   "etf（变体1）",
+   "csi"
+  ],
+  "feedback": {
+   "answer": "etf",
+   "correct": false,
+   "explain": "看产品名后缀 _etf，属于 etf 池。"
+  }
+ },
+ "qs-gt-0108": {
+  "id": "qs-gt-0108",
+  "module": "qs",
+  "q": "产品 hy03_zs_etf 属于哪个池？",
+  "options": [
+   "etf（变体1）",
+   "etf",
+   "com",
+   "csi"
+  ],
+  "feedback": {
+   "answer": "etf",
+   "correct": false,
+   "explain": "看产品名后缀 _etf，属于 etf 池。"
+  }
+ },
+ "qs-gt-0088": {
+  "id": "qs-gt-0088",
+  "module": "qs",
+  "q": "曲线联动编进了哪个希腊字母？",
+  "options": [
+   "美式更精确",
+   "都不用差分",
+   "欧式带 fwd 曲线联动（sticky-delta 类），美式 put 退化为朴素差分",
+   "两者完全相同"
+  ],
+  "feedback": {
+   "answer": "欧式带 fwd 曲线联动（sticky-delta 类），美式 put 退化为朴素差分",
+   "correct": false,
+   "explain": "fwd 扰动时 vol/sml 按 SSR·VCR/SCR 联动，把 spot-vol 相关编进 delta。"
+  }
+ },
+ "qs-gt-0062": {
+  "id": "qs-gt-0062",
+  "module": "qs",
+  "q": "毛利与自冲击如何影响 IOC 下单量？",
+  "options": [
+   "毛利越大下越少",
+   "固定手数",
+   "与毛利无关",
+   "毛利越大下越多，自冲击越贵下越少"
+  ],
+  "feedback": {
+   "answer": "毛利越大下越多，自冲击越贵下越少",
+   "correct": false,
+   "explain": "theo_shift 是吃进自身头寸后的价格总位移（自冲击成本）。"
+  }
+ },
+ "qs-gt-0082": {
+  "id": "qs-gt-0082",
+  "module": "qs",
+  "q": "zcf 的参数保护闸在什么条件下拒改？",
+  "options": [
+   "IOC/LMT/Quote/Mark 任一开着则拒改并回滚",
+   "需重启",
+   "随时可改",
+   "只告警"
+  ],
+  "feedback": {
+   "answer": "IOC/LMT/Quote/Mark 任一开着则拒改并回滚",
+   "correct": true,
+   "explain": "交易开着不许改曲线模式/关键参数。"
+  }
+ },
+ "qs-gt-0022": {
+  "id": "qs-gt-0022",
+  "module": "qs",
+  "q": "QS 产品使用的柜台接口（api）有哪几类？",
+  "options": [
+   "仅 ctp",
+   "yd / ctp / nhtd / femas / hts / rem_zsqh",
+   "仅 yd",
+   "yd / ctp 两类"
+  ],
+  "feedback": {
+   "answer": "yd / ctp / nhtd / femas / hts / rem_zsqh",
+   "correct": false,
+   "explain": "六类柜台接口并存。"
+  }
+ },
+ "qs-gt-0059": {
+  "id": "qs-gt-0059",
+  "module": "qs",
+  "q": "zarb 侧行情与参数共享缓冲的用途是？",
+  "options": [
+   "订单回报缓存",
+   "日志队列",
+   "行情/参数写入后由算法线程消费（参数含 cUsed*）",
+   "风控计数"
+  ],
+  "feedback": {
+   "answer": "行情/参数写入后由算法线程消费（参数含 cUsed*）",
+   "correct": false,
+   "explain": "MD 2000 槽、参数 5000 槽。"
+  }
+ },
+ "qs-gt-0002": {
+  "id": "qs-gt-0002",
+  "module": "qs",
+  "q": "aAccuDelta 的定义是？",
+  "options": [
+   "标的合约市值",
+   "期权张数",
+   "对冲期货保证金",
+   "该到期月期权仓位折成标的的数量（正=看涨，负=看跌）"
+  ],
+  "feedback": {
+   "answer": "该到期月期权仓位折成标的的数量（正=看涨，负=看跌）",
+   "correct": false,
+   "explain": "逐 strike 累加：Σ(Delta×持仓×期权乘数)÷标的乘数。"
+  }
+ },
+ "qs-gt-0025": {
+  "id": "qs-gt-0025",
+  "module": "qs",
+  "q": "“dstl 二对一”指什么？",
+  "options": [
+   "两份配置对应同一个产品",
+   "两家券商",
+   "双倍保证金",
+   "两个产品共用一台服务器"
+  ],
+  "feedback": {
+   "answer": "两份配置对应同一个产品",
+   "correct": true,
+   "explain": "dstl_yh_csi 有 tl01/tl02 两份配置。"
+  }
+ },
+ "qs-gt-0113": {
+  "id": "qs-gt-0113",
+  "module": "qs",
+  "q": "产品名 mx01_nh_etf 中的 nh 表示哪家券商？",
+  "options": [
+   "南华",
+   "国贸",
+   "国泰君安",
+   "光大"
+  ],
+  "feedback": {
+   "answer": "南华",
+   "correct": true,
+   "explain": "命名规则：<系列><编号>_<券商>_<池>，nh=南华。"
+  }
+ },
+ "qs-gt-0055": {
+  "id": "qs-gt-0055",
+  "module": "qs",
+  "q": "TTE 与贴现因子的日历口径是？",
+  "options": [
+   "均 360 天",
+   "均自然日",
+   "均工作日",
+   "TTE 按工作日/252；DF 按自然日/365 日内插值"
+  ],
+  "feedback": {
+   "answer": "TTE 按工作日/252；DF 按自然日/365 日内插值",
+   "correct": false,
+   "explain": "剔除周末与节假日，日内按当日已交易时长插值 pct_day。"
+  }
+ },
+ "qs-gt-0106": {
+  "id": "qs-gt-0106",
+  "module": "qs",
+  "q": "产品 hy03_ht_etf 属于哪个池？",
+  "options": [
+   "csi",
+   "etf（变体1）",
+   "com",
+   "etf"
+  ],
+  "feedback": {
+   "answer": "etf",
+   "correct": false,
+   "explain": "看产品名后缀 _etf，属于 etf 池。"
+  }
+ },
+ "qs-gt-0116": {
+  "id": "qs-gt-0116",
+  "module": "qs",
+  "q": "产品 mx02_gj_etf 属于哪个池？",
+  "options": [
+   "etf",
+   "com",
+   "csi",
+   "etf（变体1）"
+  ],
+  "feedback": {
+   "answer": "etf",
+   "correct": true,
+   "explain": "看产品名后缀 _etf，属于 etf 池。"
+  }
+ },
+ "qs-gt-0097": {
+  "id": "qs-gt-0097",
+  "module": "qs",
+  "q": "产品名 cx01_yh_etf 中的 yh 表示哪家券商？",
+  "options": [
+   "国贸",
+   "光大",
+   "国泰君安",
+   "银河"
+  ],
+  "feedback": {
+   "answer": "银河",
+   "correct": false,
+   "explain": "命名规则：<系列><编号>_<券商>_<池>，yh=银河。"
+  }
+ },
+ "qs-gt-0004": {
+  "id": "qs-gt-0004",
+  "module": "qs",
+  "q": "QS 产品池分布（2026-09 口径）是？",
+  "options": [
+   "etf 14 + qs_stk_g1 20 + csi 11 + com 1",
+   "etf 14 + csi 32",
+   "etf 25 + csi 10",
+   "全部 etf"
+  ],
+  "feedback": {
+   "answer": "etf 14 + qs_stk_g1 20 + csi 11 + com 1",
+   "correct": true,
+   "explain": "池分布：etf14/g1 20/csi11/com1。"
+  }
+ },
+ "qs-gt-0070": {
+  "id": "qs-gt-0070",
+  "module": "qs",
+  "q": "QuoteMode 可选？",
+  "options": [
+   "单/双栏",
+   "Passive/Aggressive",
+   "IoC/Lmt",
+   "Tv / Market / Both / Neither"
+  ],
+  "feedback": {
+   "answer": "Tv / Market / Both / Neither",
+   "correct": false,
+   "explain": "TV 模式按报出尺寸后的敞口重定价；Market 模式用 mid_theo。"
+  }
+ },
+ "qs-gt-0024": {
+  "id": "qs-gt-0024",
+  "module": "qs",
+  "q": "zcf 远期投票的两种模型是？",
+  "options": [
+   "手工/自动",
+   "快照/实时",
+   "MaxNumFit（最多区间包住）与 Balanced（买卖侧均衡）",
+   "日/夜盘"
+  ],
+  "feedback": {
+   "answer": "MaxNumFit（最多区间包住）与 Balanced（买卖侧均衡）",
+   "correct": false,
+   "explain": "MaxNumFit 最大化 in_middle_num；Balanced 最小化两侧偏离差。"
+  }
+ },
+ "qs-gt-0017": {
+  "id": "qs-gt-0017",
+  "module": "qs",
+  "q": "aAccuVega 的定义与单位？",
+  "options": [
+   "波动率每动一个点持仓值多少钱（元/波动点）；正=多波，负=空波",
+   "期权张数×权利金",
+   "元/日",
+   "标的份数"
+  ],
+  "feedback": {
+   "answer": "波动率每动一个点持仓值多少钱（元/波动点）；正=多波，负=空波",
+   "correct": true,
+   "explain": "Σ(Vega×持仓×合约乘数)÷汇率。"
+  }
+ },
+ "qs-gt-0020": {
+  "id": "qs-gt-0020",
+  "module": "qs",
+  "q": "aAccuVega 为什么除汇率而不除标的乘数？",
+  "options": [
+   "汇率波动更大",
+   "标的本身对波动率不敏感，无需折算对冲单位；统一折成本币口径",
+   "乘数已在 Vega 里",
+   "历史惯例"
+  ],
+  "feedback": {
+   "answer": "标的本身对波动率不敏感，无需折算对冲单位；统一折成本币口径",
+   "correct": false,
+   "explain": "Delta 折对冲单位、Vega 折本币，两者口径不同。"
+  }
+ },
+ "qs-gt-0063": {
+  "id": "qs-gt-0063",
+  "module": "qs",
+  "q": "IOC 篮子跨月联合搜索最多几轮？",
+  "options": [
+   "3 轮",
+   "无限制",
+   "8 轮",
+   "16 轮"
+  ],
+  "feedback": {
+   "answer": "8 轮",
+   "correct": false,
+   "explain": "任一腿不满足 MinIocPnl 则整体降尺寸重来。"
+  }
+ },
+ "qs-gt-0045": {
+  "id": "qs-gt-0045",
+  "module": "qs",
+  "q": "隐含参数跳变时 zcf 会？",
+  "options": [
+   "静默丢弃",
+   "直接重启",
+   "切 Manual 模式并告警，任一跳变置 cPanic=1",
+   "只记录不停"
+  ],
+  "feedback": {
+   "answer": "切 Manual 模式并告警，任一跳变置 cPanic=1",
+   "correct": false,
+   "explain": "跳变保护：非 Manual 模式下检测超阈即切手动。"
+  }
+ },
+ "qs-gt-0111": {
+  "id": "qs-gt-0111",
+  "module": "qs",
+  "q": "产品名 mx01_gj_etf 中的 gj 表示哪家券商？",
+  "options": [
+   "国贸",
+   "光大",
+   "国泰君安",
+   "海通"
+  ],
+  "feedback": {
+   "answer": "国泰君安",
+   "correct": false,
+   "explain": "命名规则：<系列><编号>_<券商>_<池>，gj=国泰君安。"
+  }
+ },
+ "qs-gt-0072": {
+  "id": "qs-gt-0072",
+  "module": "qs",
+  "q": "报价中间理论价 = ？",
+  "options": [
+   "ArbSSTv + MidTvDif(50ms EMA) − ss（仓位位移项）",
+   "昨结价",
+   "最新成交价",
+   "盘口中位"
+  ],
+  "feedback": {
+   "answer": "ArbSSTv + MidTvDif(50ms EMA) − ss（仓位位移项）",
+   "correct": true,
+   "explain": "ss 由 StrikePos/SSElastic 决定，叠加双边保护边。"
+  }
+ },
+ "qs-gt-0066": {
+  "id": "qs-gt-0066",
+  "module": "qs",
+  "q": "zarb 的 Greeks 风险维度包括？",
+  "options": [
+   "Delta/Gamma/Theta",
+   "Delta / Vega / Skew / KtC / KtP",
+   "仅 Vega",
+   "仅 Delta/Vega"
+  ],
+  "feedback": {
+   "answer": "Delta / Vega / Skew / KtC / KtP",
+   "correct": false,
+   "explain": "各维按（最大风险−等价风险）/单位风险限买卖量。"
+  }
+ },
+ "qs-gt-0119": {
+  "id": "qs-gt-0119",
+  "module": "qs",
+  "q": "产品名 mx02_wk_etf 中的 wk 表示哪家券商？",
+  "options": [
+   "五矿",
+   "光大",
+   "国贸",
+   "国泰君安"
+  ],
+  "feedback": {
+   "answer": "五矿",
+   "correct": true,
+   "explain": "命名规则：<系列><编号>_<券商>_<池>，wk=五矿。"
+  }
+ },
+ "qs-gt-0084": {
+  "id": "qs-gt-0084",
+  "module": "qs",
+  "q": "Ladder 策略在解决什么问题？",
+  "options": [
+   "如何选择品种",
+   "何时允许改进 BBO、何时只 join 排队",
+   "如何取消订单",
+   "如何计算保证金"
+  ],
+  "feedback": {
+   "answer": "何时允许改进 BBO、何时只 join 排队",
+   "correct": false,
+   "explain": "7 种状态机，受 MaxCxlRate 与 OrderThrottle 双重限频。"
+  }
+ },
+ "qs-gt-0104": {
+  "id": "qs-gt-0104",
+  "module": "qs",
+  "q": "产品 hy01_yh_etf 属于哪个池？",
+  "options": [
+   "csi",
+   "com",
+   "etf",
+   "etf（变体1）"
+  ],
+  "feedback": {
+   "answer": "etf",
+   "correct": false,
+   "explain": "看产品名后缀 _etf，属于 etf 池。"
+  }
+ },
+ "qs-gt-0087": {
+  "id": "qs-gt-0087",
+  "module": "qs",
+  "q": "vega/skew 的交叉验证现状？",
+  "options": [
+   "完全不可用",
+   "只需符号不用量纲",
+   "全部已验证",
+   "符号检验可用，量纲未标定——别装作验证过"
+  ],
+  "feedback": {
+   "answer": "符号检验可用，量纲未标定——别装作验证过",
+   "correct": false,
+   "explain": "Δ参数≈0 的桶符号检验无意义，剔除。"
+  }
+ },
+ "qs-gt-0048": {
+  "id": "qs-gt-0048",
+  "module": "qs",
+  "q": "cMark* 系列的来源是？",
+  "options": [
+   "昨日收盘价",
+   "cImplied* 的滑窗均值（cMarkPts 长度，下限 100）",
+   "手工输入",
+   "TV 折算"
+  ],
+  "feedback": {
+   "answer": "cImplied* 的滑窗均值（cMarkPts 长度，下限 100）",
+   "correct": false,
+   "explain": "供 zarb 的 calc_marked_tv 估值/PnL 使用。"
+  }
+ },
+ "qs-gt-0079": {
+  "id": "qs-gt-0079",
+  "module": "qs",
+  "q": "EOD 收盘时 zcf 的 aAffirm 做什么？",
+  "options": [
+   "无操作",
+   "清空参数",
+   "Used* 存档为 Used*Eod，全部 expiry 切 Manual（次日从手动起步）",
+   "直接关机"
+  ],
+  "feedback": {
+   "answer": "Used* 存档为 Used*Eod，全部 expiry 切 Manual（次日从手动起步）",
+   "correct": false,
+   "explain": "开盘前从手动值起步，避免用旧曲线自动交易。"
+  }
+ },
+ "qs-gt-0038": {
+  "id": "qs-gt-0038",
+  "module": "qs",
+  "q": "美式认沽的理论价用什么方法？",
+  "options": [
+   "欧式/call 用 BS，美式 put 用 Bjerksund",
+   "都用蒙特卡洛",
+   "都用 BS",
+   "都用二叉树"
+  ],
+  "feedback": {
+   "answer": "欧式/call 用 BS，美式 put 用 Bjerksund",
+   "correct": true,
+   "explain": "tte≤0 时直接返回内在价值。"
+  }
+ },
+ "qs-gt-0034": {
+  "id": "qs-gt-0034",
+  "module": "qs",
+  "q": "σ 与 z 的关系式是？",
+  "options": [
+   "常数微笑",
+   "σ = a+b/z",
+   "σ = vol + sml·z + 0.5·k·z²（两翼 k 分别取 KtC/KtP）",
+   "σ = vol·e^z"
+  ],
+  "feedback": {
+   "answer": "σ = vol + sml·z + 0.5·k·z²（两翼 k 分别取 KtC/KtP）",
+   "correct": false,
+   "explain": "z = ln(atm/strike)/√tte，两翼二次项分别用 KtC/KtP。"
+  }
+ },
+ "qs-gt-0120": {
+  "id": "qs-gt-0120",
+  "module": "qs",
+  "q": "产品 tl01_gd_etf 属于哪个池？",
+  "options": [
+   "com",
+   "etf（变体1）",
+   "etf",
+   "csi"
+  ],
+  "feedback": {
+   "answer": "etf",
+   "correct": false,
+   "explain": "看产品名后缀 _etf，属于 etf 池。"
+  }
+ },
+ "qs-gt-0036": {
+  "id": "qs-gt-0036",
+  "module": "qs",
+  "q": "Wing 公式的自变量 z 等于？",
+  "options": [
+   "strike/atm",
+   "ln(strike/atm)·tte",
+   "ln(atm/strike)/√tte",
+   "(atm−strike)/tte"
+  ],
+  "feedback": {
+   "answer": "ln(atm/strike)/√tte",
+   "correct": false,
+   "explain": "对数在货币性除以剩余时间平方根。"
+  }
+ },
+ "qs-gt-0064": {
+  "id": "qs-gt-0064",
+  "module": "qs",
+  "q": "takeout_optimized_basket_cross_expiries 的循环上限？",
+  "options": [
+   "3 轮",
+   "无限制",
+   "16 轮",
+   "8 轮"
+  ],
+  "feedback": {
+   "answer": "8 轮",
+   "correct": false,
+   "explain": "任一腿不满足 MinIocPnl 则整体降尺寸重来。"
+  }
+ },
+ "qs-gt-0003": {
+  "id": "qs-gt-0003",
+  "module": "qs",
+  "q": "zcf（Curve Fitting）在套利体系中的角色是？",
+  "options": [
+   "定价中枢：拟合波动率曲线与远期，产出 cUsed* 属性",
+   "行情网关",
+   "清算模块",
+   "下单引擎"
+  ],
+  "feedback": {
+   "answer": "定价中枢：拟合波动率曲线与远期，产出 cUsed* 属性",
+   "correct": true,
+   "explain": "zcf = 波动率曲线拟合（定价中枢），zarb 消费其 cUsed* 曲线定价交易。"
+  }
+ }
+}
