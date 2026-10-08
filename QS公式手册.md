@@ -288,6 +288,19 @@ spd_min_gain = (spot_spread − DrvAvgSpd) × delta × SpdGainMult
 min_ioc_pnl  = min_pnl × IocPnlMult              # ITM 再 × ItmPnlMult；合成仓位 × synth_pnl_mult
 ```
 
+IOC 篮子跨月联合搜索（flow:295-300，ArbUnderlying.cpp:196-301，**最多 8 轮**）：
+
+```
+1. 各 expiry 组篮子并算合计 Greeks；
+2. 假设篮子已全部成交 → 重算弹性调价 → 每腿 adj_tv（自冲击进价格）；
+3. 任一腿 (adj_tv − ioc_px) < MinIocPnl → 整体 decrease_basket_size 重来
+   （砍腿会破坏 Δ/Vega/Sml 归零——宁可单小，不能缺腿）；
+   全部通过且还能加 → 加量回 2 重新定价；
+4. 收尾：valid_basket 按 pnl 降序 → 闸门（aFreezeOrder=0 ∧ aEnableIoc=1
+   ∧ 未 PendingRiskBreached）+ IOC 节流 → 逐腿 send_optimized_order。
+# 8 轮上限 = 搜索收敛与机会流失的折中：每轮全套重定价，搜太久行情早变
+```
+
 Market 模式报价（ss = 仓位自保护位移）：
 
 ```
