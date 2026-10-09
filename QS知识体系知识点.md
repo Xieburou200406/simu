@@ -281,7 +281,7 @@ calc_tv              — 用 Used* 参数给全月期权定价并发布 Greeks
 1. **下载（交易员/操作机做）**：`source /opt/option/env/qsmgr/qsj_ssh.sh` → `qsj_use $prod $date` → `qsj_grep "aAccuVega |...|rVegaPnl |...|cUsedVol |cImpliedSmileVol " Centralizer/centralizer.log > ${acct_ul}_${date}.raw`。产物约 20–40 万行、十几 MB，含产品下全部标的，需传到 agent 电脑。
 2. **raw 行格式（AI 解析）**：只看含 `publishing attr:` 的行，格式 `INFO <HH:MM:SS.ffffff> [pid]: publishing attr: <key> <19位时间戳> <值> (CentralizerCore.cpp:92)`。值 = `attr:` 之后第 4 个字段（key、时间戳、**值**、括号），时间 = 第 2 字段前 5 位 `HH:MM`。key 竖线分段：`E|<账户_标的>|SHEX|588000.SH|到期|-|-|-|-<属性名>`（标的级，归因 pnl/敞口/ATM vol 都在这级）或 `O|<账户_标的>|...|C|E|<行权价>|<数量><属性名>`（合约级，逐行权价 vol 曲线）。
 3. **过滤口径**：按子串 `E|hy02_gj_588000|` / `O|hy02_gj_588000|`（字面匹配，竖线非正则）筛本账户；**只统计 09:30 及以后**（之前是冷启动默认值）。各 r\*Pnl 维度做首末差 = 当日累计；`rMtMPnlChg − Σ六维` 是未列小项。
-4. **闭环验证**：`rVegaPnl ≈ aAccuVega × ΔcUsedVol(波动点数)`，aAccuVega 单位=元/波动点（1 波动点=1%=0.01），故 ×(ΔcUsedVol/0.01)。文档实例：空 150 vega × 9 波动点 ≈ −1350，对上 rVegaPnl −1378。
+4. **闭环验证（路径积分法）**：`rVegaPnl` 是 vega 敞口在 vol 路径上的积分。严格做法=按原始事件顺序，每次 cUsedVol 更新取当时最近的 aAccuVega 作 `Vega_before`，累加 `Vega_before × Δvol × 100`（×100：decimal vol→百分点；aAccuVega 单位=元/1%vol）。直接取「首末 aAccuVega×cUsedVol 之差」（端点乘积法）会把日内**持仓变化**混进比较，敞口由空转多时不闭环；文档 §3 实例（空 150 vega × 9 波动点 ≈ −1350 对 −1378）是单点近似恰好闭合的情形。
 5. **亏损定位**：按 10 分钟网格列 vega/vol/pnl 演进，aPnlChg 环比最负的时段即主损段；再查当时 cUsedVol 与 aAccu\* 状态定性（敞口没变参数动=被动重定价挨打；敞口阶跃=主动交易）。
 
 > 工作区已落地工具 `pnl_decompose_analyzer.py`（实现 §2/§3）：`python pnl_decompose_analyzer.py --raw <file>.raw --acct hy02_gj_588000` 直接出归因表+闭环验证+10 分钟网格。
@@ -297,7 +297,7 @@ calc_tv              — 用 Used* 参数给全月期权定价并发布 Greeks
 
 ⚠ **读数铁律（本账户踩过的坑）**：`rMtMPnlChg`/`aPnlChg` 是**累计型账户**，首值≠0（本例首 −1295.99 / −267.66，含隔夜/历史基数）。§一 的"末值"= 收盘累计余额（即你屏幕看到的"总盈亏" −555.66 / −261.25），"当日累计"= 末−首 = 今日日内变动（+740.33 / +6.41）。**末值和当日累计是两个量，别混**：账户今天日内是赚的（尤其 MTM +740），但开盘基数太负，收盘余额仍是负的。
 
-rVegaPnl 闭环：估算 aAccuVega(日均 −88.25) × Δvol(+0.31 波动点) ≈ −27.54，实际 +48.50，偏差 −76.03。量级对得上、符号相反——因当日 smile 形态（skew/ktc）也显著变，单点 vol 估计无法闭合，属正常，用 §一 rVegaSkewPnl/rVegaKtcPnl 补足。
+rVegaPnl 闭环（路径积分法）：按事件顺序 Σ Vega_before×Δvol×100 = **46.18**，实际 **+48.50**，偏差 **−2.31（−4.77%）** → 基本闭环 ✓。对照的端点乘积法（首 −100.73×35.99% 与末 −75.78×36.30%）给出 **+874.22**，完全不闭环——证明旧版「单点/日均敞口×总vol变动」算法本身有误（混入日内持仓变化），并非 skew/ktc 造成。改用路径积分后 rVegaPnl 自身即闭环，无需 §一 的 rVegaSkewPnl/rVegaKtcPnl 来补（二者是 §一 并列的独立维度：+54.55 / −35.45）。
 
 注：分析器 §一 已加防混淆注（末值/当日累计含义+复算例，值随账户动态生成），见提交 494220b。§三 网格默认 10 分钟（可 `--step N` 调），并新增「aPnlChg累计」列（每桶末真实累计余额，末行=末值=屏幕收盘余额）与「累计盈亏 ASCII 走势」（折线+环比柱），直接把末值与你屏幕对上，避免把末值/当日累计/累计最低三个数看混。510300、510500 两标的同法一次出报告即可横向比对。
 
