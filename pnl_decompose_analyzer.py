@@ -90,14 +90,16 @@ def parse_raw(path, acct, after="09:30"):
                 i = parts.index("attr:")
             except ValueError:
                 continue
-            if i + 3 >= len(parts):
+            if len(parts) < 6:
                 continue
             key = parts[i + 1]
-            # attr: 之后依次是 key(第1)、19位时间戳(第2)、值(第3)，再之后是 (CentralizerCore.cpp:92)
-            # 因此值 = parts[i+3]，不是 parts[-1]
-            if i + 3 >= len(parts):
-                continue
-            value_str = parts[i + 3]
+            # 值 = 倒数第 2 个字段；最后一个字段是来源定位 (CentralizerCore.cpp:92)
+            # 文档 §2 写“倒数第1”，实际最后一个是括号来源，故取倒数第2。
+            # 两种写法在 9 字段标准行上等价，但 O 级行有时多字段，倒数第2 更鲁棒。
+            if parts[-1].startswith("("):
+                value_str = parts[-2]
+            else:
+                value_str = parts[-1]
             time_str = parts[1][:5] if len(parts[1]) >= 5 else parts[1]
             # 时间过滤
             if time_str < after:
@@ -116,7 +118,10 @@ def parse_raw(path, acct, after="09:30"):
                 series[attr].append((time_str, val))
             elif segs[0] == "O":
                 strike = segs[7]
-                # 末段形如 10000cImpliedSmileVol，属性名统一记 cImpliedSmileVol
+                # cImpliedSmileVol 是隐含波动率，必须为正且 < 10（即 <1000%）；
+                # 部分行格式异动会把别的字段误解析进来（如 -388 / 2947），直接丢弃
+                if not (0.0 < val < 10.0):
+                    continue
                 vol_curve[strike].append((time_str, val))
 
     # 按时间升序（日志本就升序，保险起见排序）
@@ -203,6 +208,10 @@ def main():
         p(f"  实际 rVegaPnl 首末差            = {rv:.2f}")
         if not (lambda x: x != x)(rv):
             p(f"  偏差 = {est - rv:.2f}  （量级一致即对上，文档实例 -150×9≈-1370 对 -1378）")
+            if est * rv < 0 or abs(est - rv) > abs(est) * 2 + 1:
+                p("  ⚠ 单 vol 估计与实际 rVegaPnl 量级/符号差异较大：当日 smile 形态"
+                  "（skew/ktc）也显著变化，说明 vol 水平之外还有形状贡献，单点估计"
+                  "无法闭合——属正常，闭合用 §一 的 rVegaSkewPnl/rVegaKtcPnl 补足。")
     else:
         p("  缺少 aAccuVega 或 cUsedVol 序列，无法验证。")
 
@@ -221,29 +230,30 @@ def main():
     p(f"{'时段':<8}" + "".join(f"{a:>14}" for a in grid_attrs))
     p("-" * (8 + 14 * len(grid_attrs)))
     prev = {a: None for a in grid_attrs}
-    worst_bucket, worst_bucket_drop = None, 0.0
+    worst_bucket, worst_level = None, float("inf")
+    worst_step_bucket, worst_step = None, 0.0
     for b in sorted(buckets):
         row = f"{b:<8}"
-        bucket_drop = 0.0
         for a in grid_attrs:
             v = buckets[b].get(a)
             if v is None or prev[a] is None:
                 row += f"{'':>14}"
-                continue
-            d = v - prev[a]
-            row += f"{d:>+14.2f}"
-            if a == "aPnlChg":
-                bucket_drop += d
-        p(row)
-        if bucket_drop < worst_bucket_drop:
-            worst_bucket, worst_drop = b, bucket_drop
-        prev = {a: buckets[b].get(a, (prev[a] if prev[a] is not None else None)) for a in grid_attrs}
-        # 用当前桶末值推进 prev
-        for a in grid_attrs:
+            else:
+                d = v - prev[a]
+                row += f"{d:>+14.2f}"
+                # aPnlChg：累计最低 = 亏损最重时段；环比最大回落 = 单桶最惨
+                if a == "aPnlChg" and v is not None:
+                    if v < worst_level:
+                        worst_bucket, worst_level = b, v
+                    if prev[a] is not None and d < worst_step:
+                        worst_step_bucket, worst_step = b, d
             if a in buckets[b]:
                 prev[a] = buckets[b][a]
+        p(row)
     if worst_bucket is not None:
-        p(f"\n亏损最重时段：{worst_bucket}（aPnlChg 环比 {worst_drop:+.2f}）")
+        p(f"\n亏损最重时段（aPnlChg 累计最低）：{worst_bucket}  {worst_level:+.2f}")
+    if worst_step_bucket is not None:
+        p(f"单桶最大回落（aPnlChg 环比）：{worst_step_bucket}  {worst_step:+.2f}")
 
     # ---- 4) 逐行权价 vol 曲线（O 级，首末快照）------------------------
     if vol_curve:
