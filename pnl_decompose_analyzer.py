@@ -74,6 +74,8 @@ def parse_raw(path, acct, after="09:30"):
     """
     series = defaultdict(list)
     vol_curve = defaultdict(list)
+    # 仅收集 aAccuVega / cUsedVol 的完整时间戳事件流，供 §二 路径积分用（避免 HH:MM 削位丢精度）
+    closure_events = []
     acct_pfx_e = f"E|{acct}|"
     acct_pfx_o = f"O|{acct}|"
     n_total = 0
@@ -116,6 +118,9 @@ def parse_raw(path, acct, after="09:30"):
             if segs[0] == "E":
                 attr = segs[-1].lstrip("-")          # -rVegaPnl -> rVegaPnl
                 series[attr].append((time_str, val))
+                if attr in ("aAccuVega", "cUsedVol"):
+                    # 保留完整时间戳（parts[1] = HH:MM:SS.ffffff），§二 按事件顺序积分
+                    closure_events.append((parts[1], attr, val))
             elif segs[0] == "O":
                 strike = segs[7]
                 # cImpliedSmileVol 是隐含波动率，必须为正且 < 10（即 <1000%）；
@@ -130,7 +135,7 @@ def parse_raw(path, acct, after="09:30"):
     for k in vol_curve:
         vol_curve[k].sort(key=lambda x: x[0])
 
-    return series, vol_curve, n_total, n_kept
+    return series, vol_curve, n_total, n_kept, closure_events
 
 
 def first_last(s):
@@ -203,7 +208,7 @@ def main():
     ap.add_argument("--step", type=int, default=10, help="网格粒度（分钟），默认 10")
     args = ap.parse_args()
 
-    series, vol_curve, n_total, n_kept = parse_raw(args.raw, args.acct, args.after)
+    series, vol_curve, n_total, n_kept, closure_events = parse_raw(args.raw, args.acct, args.after)
 
     L = []
     p = L.append
@@ -254,30 +259,49 @@ def main():
     for a, d in ranked[:3]:
         p(f"   {a:<16} {d:>12.2f}   {ATTR_CN.get(a,'')}")
 
-    # ---- 2) rVegaPnl 闭环验证 -----------------------------------------
-    p("\n【二、rVegaPnl 闭环验证：aAccuVega × ΔcUsedVol 】")
-    if "aAccuVega" in series and "cUsedVol" in series:
-        _, vg1, _ = first_last(series["aAccuVega"])
-        _, vol1, dvol = first_last(series["cUsedVol"])
-        # 用日均敞口（首末均值）近似
-        vg0, _, _ = first_last(series["aAccuVega"])
-        vg_mean = (vg0 + vg1) / 2.0
-        # aAccuVega 单位=元/波动点（1 波动点=1%=0.01）；vol 净变动换算成波动点数
-        vol_pts = dvol / 0.01
-        est = vg_mean * vol_pts
-        rv = cum.get("rVegaPnl", float("nan"))
-        p(f"  aAccuVega 首 {vg0:.2f} / 末 {vg1:.2f}（日均 {vg_mean:.2f}）")
-        p(f"  cUsedVol  首 {series['cUsedVol'][0][1]:.4f} / 末 {vol1:.4f}  →  Δvol = {dvol:+.4f}（{vol_pts:+.1f} 波动点）")
-        p(f"  估算 vega 盈亏 ≈ 日均敞口 × 波动点数 = {est:.2f}")
-        p(f"  实际 rVegaPnl 首末差            = {rv:.2f}")
-        if not (lambda x: x != x)(rv):
-            p(f"  偏差 = {est - rv:.2f}  （量级一致即对上，文档实例 -150×9≈-1370 对 -1378）")
-            if est * rv < 0 or abs(est - rv) > abs(est) * 2 + 1:
-                p("  ⚠ 单 vol 估计与实际 rVegaPnl 量级/符号差异较大：当日 smile 形态"
-                  "（skew/ktc）也显著变化，说明 vol 水平之外还有形状贡献，单点估计"
-                  "无法闭合——属正常，闭合用 §一 的 rVegaSkewPnl/rVegaKtcPnl 补足。")
+    # ---- 2) rVegaPnl 闭环验证（路径积分法）-----------------------------
+    p("\n【二、rVegaPnl 闭环验证：Σ aAccuVega×ΔcUsedVol（按事件顺序路径积分）】")
+    if "aAccuVega" in series and "cUsedVol" in series and "rVegaPnl" in cum:
+        # 路径积分：按原始事件顺序，每次 cUsedVol 更新时用当时最近的 aAccuVega 作 Vega_before
+        evs = sorted(closure_events, key=lambda e: e[0])
+        cur_vega = None
+        prev_vol = None
+        path_sum = 0.0
+        n_steps = 0
+        for _ts, kind, v in evs:
+            if kind == "aAccuVega":
+                cur_vega = v
+            else:  # cUsedVol
+                if cur_vega is not None and prev_vol is not None:
+                    dvol = v - prev_vol
+                    path_sum += cur_vega * dvol * 100.0   # ×100：decimal vol → 百分点；aAccuVega 单位=元/1%vol
+                    n_steps += 1
+                prev_vol = v
+        rv = cum["rVegaPnl"]
+        vg0 = series["aAccuVega"][0][1]
+        vg1 = series["aAccuVega"][-1][1]
+        vol0 = series["cUsedVol"][0][1]
+        vol1 = series["cUsedVol"][-1][1]
+        # 端点乘积法（对照：会把日内持仓变化混进比较，通常不闭环）
+        prod_diff = (vg1 * vol1 - vg0 * vol0) * 100.0
+        p(f"  aAccuVega 首 {vg0:+.2f} / 末 {vg1:+.2f}（日内由空转多时，端点乘积法失效）")
+        p(f"  cUsedVol  首 {vol0*100:.2f}% / 末 {vol1*100:.2f}%（Δ = {(vol1-vol0)*100:+.2f} 百分点）")
+        p(f"  路径积分 Σ Vega_before × Δvol×100 = {path_sum:.2f}  （共 {n_steps} 段 vol 变动）")
+        p(f"  实际 rVegaPnl 首末差               = {rv:.2f}")
+        p(f"  端点乘积法首末差（对照，不闭环）    = {prod_diff:+.2f}")
+        if n_steps > 0:
+            diff = path_sum - rv
+            pct = diff / rv * 100 if rv != 0 else float("nan")
+            p(f"  路径积分闭环偏差 = {diff:+.2f}（{pct:+.2f}%）")
+            if abs(pct) <= 5:
+                p("  ✓ 路径积分与 rVegaPnl 基本闭环（偏差 ≤ 5%）：vega 盈亏主要由 vol 路径上"
+                  "『当时敞口 × vol 变动』解释；对照的端点乘积法偏差大，是因混入了日内持仓变化。")
+            else:
+                p("  ⚠ 路径积分与 rVegaPnl 偏差仍较大，可能仍有 vol 曲线非平行移动 / 非线性等未建模贡献。")
+        p("  方法说明：端点乘积法（首末 aAccuVega×cUsedVol 之差）会把持仓变化也混进比较，故一般不闭环；")
+        p("            正确做法是按事件顺序做路径积分（文档 §3 第2条『aAccuVega × cUsedVol 净变化』的严格实现）。")
     else:
-        p("  缺少 aAccuVega 或 cUsedVol 序列，无法验证。")
+        p("  缺少 aAccuVega / cUsedVol / rVegaPnl 序列，无法验证。")
 
     # ---- 3) 网格演进（可配粒度，默认 5 分钟）---------------------------
     p(f"\n【三、{args.step} 分钟网格演进（定位亏损集中时段）】")
