@@ -274,6 +274,18 @@ calc_tv              — 用 Used* 参数给全月期权定价并发布 Greeks
 - **分因子速查**：delta→cUsedFwd×aAccuCashDelta（两侧验证：跌时该赚涨时该亏）；vega→cUsedVol 跳 ±0.01+；skew→大跌后虚值 put 需求；ktc→翼部曲率（onekurt 下 Ktp 恒 0）；bss→与 delta 合并看；trade→敞口阶跃时点。
 - **坑**：rClear 清零点后的差分窗口丢弃；平仓后 aPnlChg/cUsed\* 仍刷到收盘——**先跑停刷检测，把窗口显式截到引擎属性最后一刷**（与 qs-gt-0089 实录呼应：误取 09:36 +37 点，正确 09:33:54 +48 点）。
 
+### 6.3.1 实操：Centralizer raw 日志归因（raven 分支 ops/pnl-decompose.md）
+
+上面 §6.3 是"怎么想"，这份文档是"怎么从真实日志落地"。四步分工（文档 §1 末尾铁律：AI **只**做 §2/§3，绝不执行 §1 的 qsj/ssh/下载命令）：
+
+1. **下载（交易员/操作机做）**：`source /opt/option/env/qsmgr/qsj_ssh.sh` → `qsj_use $prod $date` → `qsj_grep "aAccuVega |...|rVegaPnl |...|cUsedVol |cImpliedSmileVol " Centralizer/centralizer.log > ${acct_ul}_${date}.raw`。产物约 20–40 万行、十几 MB，含产品下全部标的，需传到 agent 电脑。
+2. **raw 行格式（AI 解析）**：只看含 `publishing attr:` 的行，格式 `INFO <HH:MM:SS.ffffff> [pid]: publishing attr: <key> <19位时间戳> <值> (CentralizerCore.cpp:92)`。值 = `attr:` 之后第 4 个字段（key、时间戳、**值**、括号），时间 = 第 2 字段前 5 位 `HH:MM`。key 竖线分段：`E|<账户_标的>|SHEX|588000.SH|到期|-|-|-|-<属性名>`（标的级，归因 pnl/敞口/ATM vol 都在这级）或 `O|<账户_标的>|...|C|E|<行权价>|<数量><属性名>`（合约级，逐行权价 vol 曲线）。
+3. **过滤口径**：按子串 `E|hy02_gj_588000|` / `O|hy02_gj_588000|`（字面匹配，竖线非正则）筛本账户；**只统计 09:30 及以后**（之前是冷启动默认值）。各 r\*Pnl 维度做首末差 = 当日累计；`rMtMPnlChg − Σ六维` 是未列小项。
+4. **闭环验证**：`rVegaPnl ≈ aAccuVega × ΔcUsedVol(波动点数)`，aAccuVega 单位=元/波动点（1 波动点=1%=0.01），故 ×(ΔcUsedVol/0.01)。文档实例：空 150 vega × 9 波动点 ≈ −1350，对上 rVegaPnl −1378。
+5. **亏损定位**：按 10 分钟网格列 vega/vol/pnl 演进，aPnlChg 环比最负的时段即主损段；再查当时 cUsedVol 与 aAccu\* 状态定性（敞口没变参数动=被动重定价挨打；敞口阶跃=主动交易）。
+
+> 工作区已落地工具 `pnl_decompose_analyzer.py`（实现 §2/§3）：`python pnl_decompose_analyzer.py --raw <file>.raw --acct hy02_gj_588000` 直接出归因表+闭环验证+10 分钟网格。
+
 ### 6.4 延迟分析工具（lat）
 
 - `analyze_one_log`：日期+产品+日志目录 → SSH 远端解析 → scp CSV 回本机 → 统计+入库 SQLite。按 db 的 api 字段自动选六柜台解析器。
