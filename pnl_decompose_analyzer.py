@@ -331,8 +331,9 @@ def main():
     if worst_step_bucket is not None:
         p(f"单桶最大回落（aPnlChg 环比）：{worst_step_bucket}  {worst_step:+.2f}")
     if "aPnlChg" in series:
-        p("说明：aPnlChg累计 列 = 每桶末真实累计盈亏；末行 = §一「末值」"
-          f"{apnl_f1:+.2f}（= 你屏幕看到的收盘余额），首行≈§一「首值」{apnl_f0:+.2f}；"
+        p("说明：aPnlChg累计 列 = 每桶末真实累计盈亏（非环比）；末行 = §一「末值」"
+          f"{apnl_f1:+.2f}（= 你屏幕看到的收盘余额）。首行(09:30 桶末)与 §一「首值」{apnl_f0:+.2f}"
+          "（当日最早一帧）不同属正常——前者取该桶最后时刻读数，后者取当日第一帧。"
           "「累计最低」是该序列日内最低点，与末值之差即当日振幅。"
           f" 当日累计 {cum.get('aPnlChg', 0):+.2f} = 末值 − 首值 = 日内净变动，与累计序列首尾差一致。")
 
