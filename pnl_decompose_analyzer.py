@@ -16,7 +16,7 @@ pnl_decompose_analyzer.py
                                    --acct hy02_gj_588000 \
                                    [--after 09:30] [--out report.txt]
 
-输出：当日累计归因表 + rVegaPnl 闭环验证 + 10 分钟网格演进（亏损集中时段）
+输出：当日累计归因表 + rVegaPnl 闭环验证 + 10 分钟网格演进（亏损集中时段，可 --step 调粒度）
 """
 
 import argparse
@@ -54,10 +54,10 @@ CUM_ATTRS = [
 ]
 
 
-def bucket10(t):
-    """把 HH:MM 归到 10 分钟网格，如 09:37 -> 09:30，14:02 -> 14:00。"""
+def bucket(t, step=5):
+    """把 HH:MM 归到 step 分钟网格，如 step=5: 09:37 -> 09:35；step=10: 09:37 -> 09:30。"""
     hh, mm = t.split(":")
-    return f"{hh}:{int(mm) // 10 * 10:02d}"
+    return f"{hh}:{int(mm) // step * step:02d}"
 
 
 def parse_raw(path, acct, after="09:30"):
@@ -139,12 +139,68 @@ def first_last(s):
     return s[0][1], s[-1][1], s[-1][1] - s[0][1]
 
 
+def ascii_line_chart(vals, labels, height=12):
+    """终端 ASCII 折线图：每列一个数据点，按其数值落在对应高度行画 #。"""
+    if len(vals) < 2:
+        return ["(数据点不足，跳过 ASCII 图)"]
+    vmin, vmax = min(vals), max(vals)
+    span = vmax - vmin
+    if span < 1e-9:
+        vmax += 1.0
+        vmin -= 1.0
+        span = vmax - vmin
+    n = len(vals)
+    colw = max(3, min(6, 72 // n))
+    def row_of(v):
+        return int(round((v - vmin) / span * (height - 1)))
+    out = []
+    for h in range(height - 1, -1, -1):
+        yval = vmin + span * h / (height - 1)
+        line = f"{yval:+9.1f} |"
+        for v in vals:
+            line += ("#" if row_of(v) == h else " ") + " " * (colw - 1)
+        out.append(line)
+    out.append(" " * 11 + "+" + "-" * (n * colw))
+    step_lab = max(1, n // 12)
+    xlab = " " * 12
+    for i, l in enumerate(labels):
+        xlab += (l if i % step_lab == 0 else "·") + " " * (colw - 1)
+    out.append(xlab)
+    return out
+
+
+def ascii_bar_chart(deltas, labels, height=9):
+    """终端 ASCII 柱状图：正向上、负向下，零轴在中间行。"""
+    if len(deltas) < 2:
+        return []
+    mx = max(abs(min(deltas)), abs(max(deltas)), 1e-9)
+    n = len(deltas)
+    colw = max(3, min(5, 60 // n))
+    mid = height // 2
+    out = []
+    for h in range(height - 1, -1, -1):
+        line = ""
+        for d in deltas:
+            target = mid + int(round(d / mx * mid))
+            line += ("#" if target == h else " ") + " " * (colw - 1)
+        out.append(line)
+    out.append(" " + "-" * (n * colw))
+    step_lab = max(1, n // 12)
+    xlab = " " * 2
+    for i, l in enumerate(labels):
+        xlab += (l if i % step_lab == 0 else "·") + " " * (colw - 1)
+    out.append(xlab)
+    out.append(f"(零轴第 {mid + 1} 行；# 向上=赚 向下=亏；峰值 {max(deltas):+.0f} / 谷值 {min(deltas):+.0f})")
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--raw", required=True, help="*.raw 文件路径")
     ap.add_argument("--acct", required=True, help="账户_标的，如 hy02_gj_588000")
     ap.add_argument("--after", default="09:30", help="只统计该时刻及之后的行，默认 09:30")
     ap.add_argument("--out", default=None, help="报告输出文件（默认打印到 stdout）")
+    ap.add_argument("--step", type=int, default=10, help="网格粒度（分钟），默认 10")
     args = ap.parse_args()
 
     series, vol_curve, n_total, n_kept = parse_raw(args.raw, args.acct, args.after)
@@ -162,6 +218,7 @@ def main():
     p("-" * 72)
     sum_dims = 0.0
     cum = {}
+    apnl_f0 = apnl_f1 = None
     for attr in CUM_ATTRS:
         if attr not in series:
             continue
@@ -169,6 +226,8 @@ def main():
         cum[attr] = diff
         if attr not in ("rMtMPnlChg", "aPnlChg"):
             sum_dims += diff
+        if attr == "aPnlChg":
+            apnl_f0, apnl_f1 = f0, f1
         cn = ATTR_CN.get(attr, "")
         p(f"{attr:<16}{f0:>14.2f}{f1:>14.2f}{diff:>14.2f}   {cn}")
 
@@ -184,7 +243,8 @@ def main():
     # 防混淆：累计型账户的首/末/当日累计含义
     p("注：rMtMPnlChg / aPnlChg 是「累计型」账户（running PnL），首值≠0，含历史/隔夜基数。")
     p("    末值 = 收盘累计余额（即你屏幕看到的「总盈亏」）；当日累计 = 末−首 = 今日日内变动。")
-    p("    例：aPnlChg 首 -267.66 → 今日 +6.41 → 末 -261.25（末值即你看到的 -261）。")
+    if apnl_f0 is not None:
+        p(f"    例：aPnlChg 首 {apnl_f0:+.2f} → 今日 {cum.get('aPnlChg', 0):+.2f} → 末 {apnl_f1:+.2f}（末值即你屏幕看到的）。")
     # 主因判定
     p("\n主因（|当日累计| 最大的维度）：")
     ranked = sorted(
@@ -219,49 +279,80 @@ def main():
     else:
         p("  缺少 aAccuVega 或 cUsedVol 序列，无法验证。")
 
-    # ---- 3) 10 分钟网格演进 -------------------------------------------
-    p("\n【三、10 分钟网格演进（定位亏损集中时段）】")
-    grid_attrs = ["rVegaPnl", "rDeltaPnl", "rBssPnl", "rTradePnl", "aPnlChg"]
-    grid_attrs = [a for a in grid_attrs if a in series]
-    buckets = defaultdict(dict)  # bucket -> attr -> 该桶末值
+    # ---- 3) 网格演进（可配粒度，默认 5 分钟）---------------------------
+    p(f"\n【三、{args.step} 分钟网格演进（定位亏损集中时段）】")
+    p("各因子列 = 该桶环比变动(Δ)；aPnlChg累计 = 每桶末真实累计余额（末行即收盘余额）。")
+    grid_attrs = [a for a in ["rVegaPnl", "rDeltaPnl", "rBssPnl", "rTradePnl", "aPnlChg"]
+                  if a in series]
+    buckets = defaultdict(dict)  # bucket -> attr -> 该桶末值（累计值）
     for attr in grid_attrs:
         last_in_bucket = {}
         for t, v in series[attr]:
-            b = bucket10(t)
+            b = bucket(t, args.step)
             last_in_bucket[b] = v
         for b, v in last_in_bucket.items():
             buckets[b][attr] = v
-    p(f"{'时段':<8}" + "".join(f"{a:>14}" for a in grid_attrs))
-    p("-" * (8 + 14 * len(grid_attrs)))
+    # 显示列：各因子环比 + aPnlChg 累计余额
+    disp = [(a, "delta") for a in grid_attrs]
+    if "aPnlChg" in series:
+        disp.append(("aPnlChg累计", "cum"))
+    p(f"{'时段':<8}" + "".join(f"{lab:>14}" for lab, _ in disp))
+    p("-" * (8 + 14 * len(disp)))
     prev = {a: None for a in grid_attrs}
     worst_bucket, worst_level = None, float("inf")
     worst_step_bucket, worst_step = None, 0.0
     for b in sorted(buckets):
         row = f"{b:<8}"
-        for a in grid_attrs:
-            v = buckets[b].get(a)
-            if v is None or prev[a] is None:
-                row += f"{'':>14}"
-            else:
-                d = v - prev[a]
-                row += f"{d:>+14.2f}"
-                # aPnlChg：累计最低 = 亏损最重时段；环比最大回落 = 单桶最惨
-                if a == "aPnlChg" and v is not None:
-                    if v < worst_level:
-                        worst_bucket, worst_level = b, v
-                    if prev[a] is not None and d < worst_step:
-                        worst_step_bucket, worst_step = b, d
-            if a in buckets[b]:
-                prev[a] = buckets[b][a]
+        cum_a = buckets[b].get("aPnlChg")
+        for lab, kind in disp:
+            if kind == "delta":
+                a = lab
+                v = buckets[b].get(a)
+                if v is None or prev[a] is None:
+                    row += f"{'':>14}"
+                else:
+                    d = v - prev[a]
+                    row += f"{d:>+14.2f}"
+                    if a == "aPnlChg":
+                        if v < worst_level:
+                            worst_bucket, worst_level = b, v
+                        if prev[a] is not None and d < worst_step:
+                            worst_step_bucket, worst_step = b, d
+                if a in buckets[b]:
+                    prev[a] = buckets[b][a]
+            else:  # cum：直接显示该桶末累计值
+                if cum_a is None:
+                    row += f"{'':>14}"
+                else:
+                    row += f"{cum_a:>+14.2f}"
         p(row)
     if worst_bucket is not None:
-        p(f"\n亏损最重时段（aPnlChg 累计最低）：{worst_bucket}  {worst_level:+.2f}")
+        p(f"\n亏损最重时段（aPnlChg 累计最低 / 日内最大回撤）：{worst_bucket}  {worst_level:+.2f}")
     if worst_step_bucket is not None:
         p(f"单桶最大回落（aPnlChg 环比）：{worst_step_bucket}  {worst_step:+.2f}")
+    if "aPnlChg" in series:
+        p("说明：aPnlChg累计 列 = 每桶末真实累计盈亏；末行 = §一「末值」"
+          f"{apnl_f1:+.2f}（= 你屏幕看到的收盘余额），首行≈§一「首值」{apnl_f0:+.2f}；"
+          "「累计最低」是该序列日内最低点，与末值之差即当日振幅。"
+          f" 当日累计 {cum.get('aPnlChg', 0):+.2f} = 末值 − 首值 = 日内净变动，与累计序列首尾差一致。")
 
-    # ---- 4) 逐行权价 vol 曲线（O 级，首末快照）------------------------
+    # ---- 4) 累计盈亏 ASCII 走势 --------------------------------------
+    if "aPnlChg" in series and len(buckets) >= 2:
+        p("\n【四、累计盈亏 ASCII 走势（aPnlChg 运行余额，每点 = 一个网格桶）】")
+        bl = sorted(buckets)
+        cum_vals = [buckets[b]["aPnlChg"] for b in bl if "aPnlChg" in buckets[b]]
+        if len(cum_vals) >= 2:
+            p("· aPnlChg 累计余额折线（纵轴=盈亏，横轴=时间桶；末点=收盘余额）：")
+            for ln in ascii_line_chart(cum_vals, bl):
+                p(ln)
+            deltas = [cum_vals[i] - cum_vals[i - 1] for i in range(1, len(cum_vals))]
+            p("\n· 每桶 aPnlChg 环比柱（零轴在中间，上=赚 下=亏）：")
+            for ln in ascii_bar_chart(deltas, bl[1:]):
+                p(ln)
+
+    # ---- 5) 逐行权价 vol 曲线（O 级，首末快照）------------------------
     if vol_curve:
-        p("\n【四、逐行权价隐含 vol 曲线（O 级 cImpliedSmileVol，首/末快照）】")
+        p("\n【五、逐行权价隐含 vol 曲线（O 级 cImpliedSmileVol，首/末快照）】")
         strikes = sorted(vol_curve.keys(), key=lambda x: float(x))
         p(f"{'行权价':<10}{'首值':>12}{'末值':>12}{'变动':>12}")
         p("-" * 46)
