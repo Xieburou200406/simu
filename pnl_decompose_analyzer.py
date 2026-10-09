@@ -181,6 +181,10 @@ def main():
     p(f"aPnlChg（引擎总盈亏）           = {apnl:>12.2f}")
     if not (lambda x: x != x)(rmtm):
         p(f"未列小项（rMtM − Σ六维）       = {rmtm - sum_dims:>12.2f}")
+    # 防混淆：累计型账户的首/末/当日累计含义
+    p("注：rMtMPnlChg / aPnlChg 是「累计型」账户（running PnL），首值≠0，含历史/隔夜基数。")
+    p("    末值 = 收盘累计余额（即你屏幕看到的「总盈亏」）；当日累计 = 末−首 = 今日日内变动。")
+    p("    例：aPnlChg 首 -267.66 → 今日 +6.41 → 末 -261.25（末值即你看到的 -261）。")
     # 主因判定
     p("\n主因（|当日累计| 最大的维度）：")
     ranked = sorted(
