@@ -1,0 +1,745 @@
+[] 期权做市系统一站通（含视频详解）
+[] 初级课程
+[] 期权做市系统入门指南（新人版）
+[] 期权希腊字母计算与波动率曲线参数影响解析.pptx
+[] 一.系统介绍
+[] （一） 定价模型
+[] 1. 期权定价合约（Driver，)
+[] 定价合约是给期权定价的标的合约。定价合约可以为期货合约，现货合约，或者合成合约。
+[] 1.1 中金所上市期权品种
+[] 中金所上市的期权品种（MO，IO，HO）有对应的期货，我们采用期货主力合约作为中金所上市期权的定价合约。
+[] 1.2 上交所和深交所上市期权品种
+[] 上交所和深圳所上市的ETF期权品种，有一些ETF的价格变化和中金所期货价格变化高度相关（如510050，159915和IH期货合约相关；510500，1599922和IC期货合约相关，510300，159919和IF期货合约相关），并且期货合约行情更新频率远远高于ETF的价格更新频率，因此我们采用相关期货主力合约作为期权定价合约。其余的ETF因为找不到相对应的期货合约，因此我们采用该ETF作为期权定价合约。
+[] 1.3 商品交易所上市期权品种
+[] 商品交易所上市的期货期权品种和中金所上市的期权品种类似，我们都采用对应期货主力合约作为上市期权的定价合约。
+[] 1.4 合成合约
+[] 将互相关联合约的行情信息，通过一定的策略算法合成一个新的价格来为相关期权定价。比如510050合约一档行情3秒更新一次。两次行情更新之间交易所发布逐笔委托和逐笔成交数据。我们根据第一次行情更新建立起一个订单队列，然后根据逐笔委托/成交更新订单队列，从而得到（估算）最新的市场行情，即合成合约。我们可将该“合成合约”命名为999050并给510050期权合约定价。用来生成”合成合约“的行情包括期货合约一档/五档行情；现货合约一档/五档/逐笔成交委托行情；ETF或者指数成分股按照既定规则合成的价格。
+[] 2. 隐含远期价格（Implied Forward,)和隐含基差（Implied Basis,)
+[] 期权市场自身有一个隐含远期价格：不同期权品种的不一样，同一品种不同到期日的期权也不一样。为了给期权合约定价，我们可以通过特定的算法从市场上算出每组到期日期权的，所以该组到期日期权对应的隐含基差为。不难看出在短时间内有均值回归的特性，因此我们通过指数移动平均（EMA）的方式过滤掉中的噪音，即。可以作为该月份期权合约提供稳定的定价。
+[] 3. 波动率曲线模型
+[] 3.1 定义
+[] 每一个标的含有多个（4-6个或更多）到期月份，每一个到期月份对应的波动率曲线可以用Wing Model表示为： ，其中
+[] 为行权价。
+[] 为该月份平值期权的隐含波动率。
+[] 为该月份波动率曲线的偏离度。
+[] 为该月份波动率曲线的峰度。交易员可选择是否在低行权价段（认沽期权虚值段）和高行权价段（认购期权许虚值段）使用同个峰值
+[] 下文中我们统一用代表，代表，代表，代表，除非有另外明确的定义。 因此Wing Model可以简化为：
+[] 3.2 波动率曲线管理
+[] 下图为豆粕期货期权2024年3月21日上午10时的波动率曲线（到期月份为2024年4月）。使用的模型为上述Wing Model。
+[] 紫线为通过系统内置算法拟合出的波动率曲线，我们用表示。
+[] 黑线为交易员手动设置的波动率曲线，我们用表示。
+[] 交易员可选择或为期权提供定价。
+[] 1.1 手工调整波动率曲线（）
+[] 调整y坐标范围和调整敏捷度
+[] 鼠标左键点击y轴左上角区域，增加y轴最大值；右键点击y轴左上角区域，减小y轴最大值；左键点击y轴左下角区域，增加y轴最小值；右键点击y轴左下角区域，减小y轴最小值。在波动率曲线面板左键双击提高拖动敏感度，右键双击降低拖动敏感度。
+[] 调整平值波动率（）
+[] 在波动率曲线管理面板中间区域，左键向上拖动波动率曲线增加，左键向下拖动波动率曲线减小。
+[] 调整偏度（）
+[] 在波动率曲线管理面板中间区域，左键向左拖动波动率曲线减小，左键向下拖动波动率曲线增加。
+[] 调整峰度（）
+[] 在波动率曲线面板右侧区域，左键向上拖动波动率曲线增加，左键向下拖动波动率曲线减小。
+[] 4. 期权理论价格和希腊字母计算
+[] [QS.xlsm]
+[] [模型说明和验证.png]
+[] 2. 波动率曲线拟合算法（）
+[] 通过一定的条件选出一组期权合约，记为。
+[] 该集合在使用下计算得到的理论价格记为。
+[] 定义目标函数为。
+[] 使得最小的就是最佳的波动率曲线。
+[] （二）波动率曲线拟合模块
+[] 1. 基差拟合模块
+[] 隐含基差和隐含波动率一样，是期权定价绕不开的话题。一些交易员使用不同的波动率曲线分别给认购期权和认沽期权定价（即认沽期权和认购期权的波动率曲线不同），就是他们忽略了隐含基差，用标的的价格直接去计算期权隐含波动率导致的。
+[] 2. 不同的拟合方式
+[] 在系统中波动率拟合需要用到的参数，拟合的结果都呈现在ExpVol这个界面，
+[] 其中隐含基差和波动率曲线可以选择手动设置模式或自动拟合模式,不同品种不同到期月独立选择。
+[] BssMode: 隐含基差模式Manual为手动设置，Smooth为系统自动拟合。
+[] AutoMan: Y选择将拟合出最新的波动率曲线更新给(M.Bss,M.Vol,M.Sml,M.KtC,M.KtP)；N为不会更新。
+[] CFPanic: 在曲线拟合时某个参数在两个时刻间的差大于设定的jump值，该开关会自动从N跳为Y，同时CFmode也会跳为Manual。同时当显示Y时无法打开交易开关，所以常态应保持为N。
+[] CFMode: 选择是否使用自动拟合模型，选择Manual，会将交易员手动设置的隐含波率曲线赋值给(U.Bss,U.Vol,U.Sml,U.KtC,U.KtP)。选择FitPx会将平滑后的曲线赋值给(U.Bss,U.Vol,U.Sml,U.KtC,U.KtP)
+[] KurtMode: 包含OneKurt和TwoKurt，OneKurt认购和认沽期权使用一个Kurtosis，即Ktc=Ktp；TwoKurt认购和认沽期权使用不同的Kurtosis，即Ktc！=Ktp。
+[] CFReset: 点击后系统模型根据最新的市场的行情拟合波动率曲线。
+[] 3. 波率曲线数据类型概述
+[] 在ExpVol界面中可以看到带有不同前缀的隐含波率曲线，他们的含义分别是：
+[] 实时计算隐含波动率曲线：
+[] I.Bss: 实时基差计算
+[] I.Fwd: 实时远期价格计算
+[] I.Vol: 实时隐含波动率计算
+[] I.Sml: 实时 Skew计算
+[] I.KtC: 实时认购期权 Kurtosis 计算
+[] I.KtP: 实时认沽期权 Kurtosis 计算
+[] 系统使用的波率曲线：
+[] U.Bss: 正在使用的基差
+[] U.Fwd: 正在使用的远期价格
+[] U.Vol: 正在使用的隐含波动率
+[] U.Sml: 正在使用的Skew
+[] U.KtC: 正在使用的认购期权 Kurtosis
+[] U.KtP: 正在使用的认沽期权 Kurtosis
+[] 平滑后的波率曲线：
+[] S.Bss: 平滑后基差
+[] S.Fwd: 平滑后远期价格
+[] S.Vol: 平滑后隐含波动率
+[] S.Sml: 平滑后Skew
+[] S.KtC: 平滑后认购期权 Kurtosis
+[] S.KtP: 平滑后认沽期权 Kurtosis
+[] 交易员手动设置的波率曲线：
+[] M.Bss: 交易员手动设置的基差
+[] M.Vol: 交易员手动设置的隐含波动率
+[] M.Sml: 交易员收到设置的 Skew
+[] M.KtC: 交易员手动设置的认购期权 Kurtosis
+[] M.KtP: 交易员手动设置的认沽期权 Kurtosis
+[] 上一交易日的波率曲线：
+[] P.Bss: 上一交易日的基差
+[] P.Vol: 上一交易日的隐含波动率
+[] P.Sml: 上一交易日的 Skew
+[] P.KtC: 上一交易日认购期权 Kurtosis
+[] P.KtP: 上一交易日认沽期权 Kurtosis
+[] 4. 合约的选择条件
+[] 当筛选合约用于波动率曲线拟合时，系统根据预设参数进行精确选择
+[] Min.Imp.Delta:选取用于拟合合约最小delta绝对值； Max.Imp.Delta:选取用于拟合合约最大Delta绝对值
+[] C.Imp.Num:选取用于拟合的认购期权最大个数；P.Imp.Num:选取用于拟合的认沽期权最大个数
+[] 在选择合约时，对于认购期权，只有当其Delta值处于Min.Imp.Delta和Max.Imp.Delta之间，并且在平值期权加上C.Imp.Num个认购期权的范围内，才会被选为用于拟合的合约。
+[] 同样地，对于认沽期权，只有当其Delta值的绝对值处于Min.Imp.Delta和Max.Imp.Delta之间，并且在平值期权加上P.Imp.Num个认沽期权的范围内，才会被选为用于拟合的合约。
+[] 一旦合约被选择用于波动率曲线拟合，OptMain中的AIS（Auto Implication Selected）将显示为"Y"，如下图所示。
+[] 其中Delta的选取范围为0.5到50，认购合约和认沽合约最多各选6个。因此3250Put的delta的绝对值小于0.5，未被做为用于拟合的合约。
+[] 5. Jump功能介绍
+[] 该组参数指在波动率曲线拟合过程中，最新一次拟合跟上一次拟合所使用的参数数据之间绝对值差值如果大于对应参数的Jump值，则会触发CFPanic，触发CFPanic系统会停止交易，同时CFMode会从FixPx跳为Manual。
+[] 6. 拟合的参数设置
+[] C.Max.Vol.Mult,P.Max.Vol.Mult是一组乘数，在波动率拟合的时候对vol取值的限制，用ATM期权的隐含波率分别乘以C.Max.Vol.Mult和P.Max.Vol.Mult
+[] Call侧曲线Vol ＜ ATM * C.Max.Vol.Mult
+[] Put测曲线Vol ＜ ATM * P.Max.Vol.Mult
+[] MinStkImF: 最小行权价值； MaxStkImF: 最大行权价值；
+[] I.Fwd.Min: 最小远期价格； I.Fwd.Max: 最大远期价格；
+[] I.Vol.Min: 最小隐含波动率； I.Vol.Max: 最大隐含波动率；
+[] I.Sml.Min: 最小Skew值； I.Sml.Max: 最大Skew值；
+[] I.KtC.Min: Call曲线最小Kurtosis值； I.KtC.Max: Call曲线最大Kurtosis值；
+[] I.KtP.Min: Put曲线最小Kurtosis值 ；I.KtP.Max: Put曲线最大Kurtosis值；
+[] 7. 波动率曲线拟合模块讲解视频
+[] [波动率曲线拟合模块.mp4]
+[] （三）套利交易模块
+[] 1. OptMain
+[] 1.1 市场价，理论价与仓位
+[] 在期权套利交易模块中系统会根据模型计算每个合约的理论价值(cTV)，同时也会根据持仓对每个合约的理论价格进行调整(ArbSSTv)，用调整后的理论价格在市场上寻找满足利润需求的合约进行交易，并实时保持头寸趋近于零。套利交易模块中包含了期权理论价格的计算、下单的功能，在系统界面中显示在OptMain界面中。
+[] Instr:期权合约名 Strike: 行权价
+[] cTV: 期权理论价 ArbTv: 以cTV为基础根据持仓风险度调整后的理论价格 ArbSSTv: 以ArbTv为基础根据StrikePos调整的理论价格
+[] MBS: 市场买一量 MBP: 市场买一价 MAS: 市场卖一量 MAP:市场卖一价
+[] CBP: 以理论为基础根据利润参数计算的最优买价 CAP: 以理论为基础根据利润参数计算的最优卖价
+[] OBP: 准备发向市场的最优买价 OAP: 准备发向市场的最优卖价
+[] SBP: 在途买单价格 SAP: 在途卖单价格
+[] ArbPos: 该合约持仓数量 StrikePos: 对应一个行权价的总持仓数量 PosSOD: 开盘时该合约的持仓数量
+[] Bias：当买单价格BidPrice > LastPrice + Bias,该买单不会发单。当卖单价格AskPrice < LastPrice - Bias,该卖单不会发单。
+[] 1.2 合约的风险值
+[] 系统实时计算每一个合约的隐含希腊风险值，并显示在Optmain界面中
+[] 2. ExpMain
+[] 套利模块中需要给系统选择交易范围，确定利润参数，控制对冲系数，监控每个到期月持仓的各个维度的风险值等功能多集中在ExpMain界面中。
+[] 2.1 套利交易的合约选择
+[] 在开始交易前需要确定主动和被动单的交易区间和可做套利交易的合约个数
+[] Min.C.AD和Max.C.AD:  的认购期权有可能被选中进行套利交易。在Min.C.AD和Max.C.AD范围之外的认购期权不会被选中做套利交易但可以平仓；
+[] Min.P.AD和Max.P.AD:  的认沽期权有可能被选中进行套利交易。在Min.P.AD和Max.P.AD范围之外的认沽期权不会被选中做套利交易但可以平仓；
+[] Min.LDC和Max.LDC: 的认购期权会通过限价单的形式进行套利交易。在Min.LDC和Max.LDC之外的认购期权不会被选中通过限价单的方式进行套利交易但可以平仓；
+[] Min.LDP和Max.LDP: 的认沽期权会通过限价单的形式进行套利交易。在Min.LDP和Max.LDP之外的认沽期权不会被选中通过限价单的方式进行套利交易但可以平仓；
+[] AR.U和AR.D: 套利交易的合约个数还需要满足平值期权向上加AR.U个和平值期权向下加AR.D个合约进行开仓交易；
+[] 2.2 设置每个到期日下的最大持仓量,最大撤单数，最大开仓数和套利交易下单手数
+[] MaxArbPos: 该到期日下单个合约的最大持仓量。
+[] MaxStrikePos: 该到期日下单个行权价上最大的持仓量（认购期权的持仓量+认沽期权的持仓量）。
+[] MinIocSz: 对价单最小的下单手数；
+[] MaxIocSz: 对价单最大的下单手数；
+[] MinLmtSz: 限价单最小的下单手数；
+[] MaxLmtSz: 限价单最大的下单手数；
+[] MaxCxlNum: 最大撤单次数；
+[] OpenLimit: 最大开仓数量；
+[] OpenCount: 当日交易开仓数；
+[] KeepEdgeRatio：维持限价单边际系数：当单个order PNL > 期望最小利润*KeepEdgeRatio，系统不撤单。当单个order PNL < 期望最小利润*KeepEdgeRatio，系统撤单。KeepEdgeRatio可以增加对市场价格波动的容忍度。
+[] 2.3 套利交易的开关介绍
+[] 2.4 持仓Greeks值的监控
+[] 系统实时对冲并显示持仓各个维度的总计Greeks
+[] AccDlt: 该到期日下所有期权合约持仓对应的Delta
+[] AccGam: 该到期日下所有期权合约持仓对应的Gamma
+[] AccVeg: 该到期日下所有期权合约持仓对应的Vega
+[] AccSml: 该到期日下所有期权合约持仓对应的Skew
+[] AccKtC: 该到期日下所有期权合约持仓对应的Call Kurtosis
+[] AccKtP: 该到期日下所有期权合约持仓对应的Put Kurtosis
+[] AccuTheta: 该到期日下所有期权合约持仓对应的Theta
+[] 2.5 Pnl监控
+[] 3. 套利交易信息费（流量）控制
+[] 商品期权专用，目前在rz_10.56.3上实现。
+[] 在UlMain页面下添加 aTransCount, aTransLimit两个参数，当 aTransCount>=min(aTransLimit, _trans_limit) 系统不再报单撤单。
+[] _trans_limit 可通过后台配置文件arb.cfg中定义 TransLimit.UlName=xxx（如 TransLimit.TA=1500)配置。
+[] 4. 套利交易模块讲解视频
+[] [套利交易模块.mp4]
+[] （四）做市报价模块
+[] 1. OptMain
+[] 1.1 持续报价界面展示
+[] Quote：选择Quote模式，Tv使用理论价来报价；Market使用市场价来报价；
+[] QV：Quote Valid，是否满足交易所报价义务；IsCQ：对应合约是否需要做持续报价；
+[] CQB：系统计算出的Quote单最优买价；CAQ: 系统计算出的Quote单最优卖价；
+[] OQB：系统准备发的Quote买单；OQA：系统准备发的Quote卖单
+[] SQB：在途Quote单买单；SQA：在途Quote单卖单
+[] ExchWidthMult：交易所最大价差乘数；
+[] 1.2 五档行情报价
+[] TBL：Target Bid Level，目标买价报价档位；TAL：Target Ask Level，目标卖价报价档位；
+[] TQB：Target Quote Bid，目标档位市场买价；TQA：Target Quote Ask，目标档位市场卖价；
+[] BKL：Bid Keep Level，买价维持档位；AKL：卖价维持档位；
+[] 2. ExpMain
+[] 2.1 报价合约选择
+[] 2.2 做市报价开关
+[] 2.3 MinMktQtyForQuote
+[] 市场上优于系统OurQuote单的数量小于设置的MinMktQtyForQuote,系统自动撤下已报Quote单，当市场优于OurQuote的单子数量大于设置的MinMktQtyForQuote重新发单。
+Ulmain界面下OrderToMdDelay:当Quote发单后，在行情没有更新前系统使用发单时的MktQty来判断是否触发MinMktQtyForQuote逻辑，持续OrderToMdDelay毫秒。
+[] 2.4 Rfq部分参数
+[] Rfqintv：设置报价应持续多少秒满足义务
+[] RfqDelay：设置系统报价在收到询价多少秒内回应
+[] RfqWait：设置收到询价后多少秒后开始回应
+[] RfqCovered：总的询价回应的数量
+[] RfqNotCovered：总的询价未回应数量
+[] 3. Market模式做市报价（新，减少被逆向选择）
+[] 沪深交易所的深度实值和深度虚值定价与市场价格偏离过大时使用TV模式报价做市义务不易满足，此时这些合约可以使用Quote=Market模式，Market模式下通过设置好的MktQuotePnlMult和MktQuoteBackoffTick计算出MaxQuoteBid 和 MinQuoteAsk，根据它们算出MarketMidPrice，再由MarketMidPrice计算出CQB与CAQ的价格。
+[] MktQuotePnlMult：跟市利润乘数
+MktQuotebackoffTick：跟市利润回退
+[] 报单逻辑
+[] 计算 ，使得：
+[] 和相差小于或者等于1 个Tick，即在中间
+[] 如果 并且 ，系统按照下单，单子的价格记为
+[] 撤单逻辑
+[] Quote单报单时，记录报单时刻的TV值为，当前时刻的TV值为。
+当前时刻与报单时刻的TV差值 满足以下条件即触发撤单
+[] 当
+[] 或
+[] 熔断集合竞价（上交所+深交所）：
+[] 当使用Market模式报价时，系统实时监控MBP和MAP，当MBP = MAP时，报价模式会从Market自动切换为Both模式，此时以理论价Tv为基础报价。当监控到MBP不等于MAP时，系统会自动从Both模式切换为Market模式报单。
+[] 3. 商品Market模式做市报价（容易被逆向选择）
+[] 下单逻辑
+[] 其中ss为系统计算出的StrikeShift
+[] 计算 ，使得：
+[] 和相差小于或者等于1 个Tick，即在中间
+[] 按照
+[] 撤单逻辑
+[] 当或者 时候撤单
+[] 4. Tv模式做市报价(商品+沪深做市）
+[] 前置逻辑（RFQ触发与参数控制）
+[] 远月合约参数控制：若远月合约采用 TV 模式报价，需将连续报价参数设为无效值（即 CQItm = -1 且 CQOtm = -1）。此举为了防止在打开 QuoteOn 时，系统按照默认连续报价逻辑发出非预期的单子。
+[] 状态跳转与RFQ响应逻辑：
+[] 当 QuoteOn 未打开（OFF）时：如果有 RFQ 请求进来，系统状态会自动跳成 Market 模式 进行响应。
+[] 当 QuoteOn 已打开（ON）时：如果有 RFQ 请求进来，系统不会跳成 Market 模式。
+[] 如果当前指定的是 TV 模式 且 QuoteOn 已打开，系统将维持 TV 模式，并按以下逻辑进行报价。
+[] 下单逻辑
+[] 计算 ，使得：
+[] 和相差小于或者等于1 个Tick，即在中间
+[] 如果 并且 ，系统按照下单，单子的价格记为
+[] 撤单逻辑
+[] 当或者 时候撤单
+[] 6. 中金所TradeLimit功能
+[] OptMain界面下TradeLimit触发后，打开BuyOpen，BuyClose，SellOpen，SellClose，TradeLimit自动增加Opt.AutoTradeLimitIncrease。手动修改TradeLimit，最多增加的值为Opt.Manual.TradeLimitIncrease。
+[] ExpMain界面下TradeLimit触发后，打开IcoOn；LmtOn；QuoteOn，TradeLmit自动增加Exp.Auto.TradeLimitIncrease。手动修改TradeLimit，最多增加的值为Exp.Manual.TradeLimitIncrease。
+[] Ulmain页面IncTrdLmt，点击后会把Optmain页面下因tradelimit达到上限而关掉的那些合约重新打开buyopen/buyclose/sellopen/sellclose，并且增加TradeLimit数量
+[] 7. 做市报价模块讲解视频
+[] [做市报价模块.mp4]
+[] （五）方向性交易模块
+[] 系统可以根据交易员的判断来控制头寸方向，只需要设定好想要的头寸后系统会根据理论价在市场上以最优的价格建立头寸。
+[] 1. ExpOfs
+[] ProgOn：Y：开始执行计划获取头寸任务；N：停止执行获取头寸任务；
+[] FwdPT：增加/减少Delta头寸的时间；FwdOffs：需要增加/减少的Delta头寸的数量；FwdOffs:目标Delta头寸；
+[] VolPT：增加/减少Vega头寸的时间；VolPO：需要增加/减少的Vega头寸的数量；VolOffs：目标Vega头寸；
+[] SmlPT：增加/减少Sml头寸的时间；SmlPO：需要增加/减少的Sml头寸的数量；SmlOffs：目标Sml头寸；
+[] KtcPT：增加/减少Ktc头寸的时间；KtcPO：需要增加/减少的Ktc头寸的数量；KtcOffs：目标Ktc头寸；
+[] 2. 示例
+[] 5. Units And Offsets Examples
+[] 4. 方向性交易模块讲解视频
+[] [方向性交易模块.mp4]
+[] （六）手动交易模块
+[] 3. 手动交易模块讲解视频
+[] [手动交易模块.mp4]
+[] （七）平价套利模块
+[] 1. OParity
+[] 在OParity界面中点击对应合约的P.Buy或者P.Sell执行策略下单操作，可以在该界面观察平价套利策略的交易机会，查看期权合约上的持仓，下单情况。同时点击P.PosL列对应期权合约可以在该界面唤出该合约的手动下单界面。
+[] P.PosL:Parity多头仓位； P.PosL.T:Parity今仓多头； P.PosL.L:Parity昨仓多头
+[] P.PosS:Parity空头仓位； P.PosS.T:Parity今仓空头； P.PosS.L:Parity昨仓空头
+[] P.BP:在途买单； P.BS:在途买单手数
+[] P.AP:在途卖单； P.AS:在途卖单手数
+[] P.BidPnl:做一组Conversion损益
+[] P.AskPnl:做一组Reversal损益
+[] P.FwdBid:合成远期期货的买入价   此处Dsf取1
+[] P.FwdAsk:合成远期期货的卖出价  此处Dsf取1
+[] P.Buy:做一组Conversion，当P.BidPnl ≥ P.MinBidPnl时才生效
+[] P.Ask:做一组Reversal，当P.AskPnl ≥ P.MinAskPnl时才生效
+[] 2. ExpParity
+[] 在ExpParity界面中可以设置每组平价套利交易的最小盈利值(P.MinBidPnl,PMinAskPnl),同时可以观察对应到期月汇总的成交，在途和拒单的情况，查看每个独立到期月的AccuDelta，AccuVega值，当某个到期月中的AccuDelta和AccuVega不为零时，对应到期月不能继续执行Conversion或者Reversal交易，需要交易员先通过手动交易将上一组未成交的合约补齐使P.AccuDelta,P.AccuVega为零后，才能继续进行策略下单。
+[] P.MinBidPnl:做一组Conversion的最小盈利值；P.MinAskPnl:做一组Reversal的最小盈利值
+[] P.FillQty:总成交数量； P.TotalQty:总报单量；P.CxlRejQty:被取消或者被拒单的数量；P.PendQty:在途订单数量
+[] P.PnltoMaturity:策略持仓持有到期后总损益；P.TotalPnl:根据理论价值计算的总损益；P.PnlChg:理论价格计算的当日损益
+[] 3. FParity
+[] 在FParity界面可以选择是否可以平今仓，同时也可以观察到期货每个到期月的持仓和发单情况。同时和OParity一样，双击不同期货到期日下的P.PosL可以唤出对应到期月份的手动下单界面。
+[] P.PosL:Parity多头仓位； P.PosL.T:Parity今仓多头； P.PosL.L:Parity昨仓多头
+[] P.PosS:Parity空头仓位； P.PosS.T:Parity今仓空头； P.PosS.L:Parity昨仓空头
+[] P.BP:在途买单； P.BS:在途买单手数
+[] P.AP:在途卖单； P.AS:在途卖单手数
+[] P.CloseToday:Y为可以平今仓，N为不可平今仓
+[] 4. 平价套利手动下单
+[] 5. 平价套利模块讲解视频
+[] [平价套利模块.mp4]
+[] 期货跨期交易
+[] BasisTrading使用说明
+[] 交易视频
+[] 可点击这里下载视频相关软件和数据，最新授权下载地址，将下载好的libzbase.so(5ccc79866aae1b26d10a59856d351015)放到patch目录下既可。
+[] 下载解压完后在ubuntu环境运行：
+[] ./run all 159922.SZ 或者
+[] ./run all 510500.SH 或者
+[] ./run all CSI1000
+[] 关闭
+[] ./run none
+[] 20240208
+[] 159922.SZ期权
+[] [159922.SZ.mp4]
+[] 510500.SH期权
+[] [510500.SH.mp4]
+[] CSI000股指期权
+[] [CSI1000.mp4]
+[] 二.风控指标清单
+[] 风险控制是做市商系统的最关键的功能，也是系统上线需要重点关注的内容，没有一个好的风险控制设计，系统随时有可能出现意外情况，导致爆仓等恶性事件。
+[] 针对这一点，在系统设计时需要充分考虑风险隔离原则，需采取的措施有：
+[] a.设置三层风控体系：策略层、网关层、熔断模块。
+[] b.策略层监测每个策略的风控指标，由交易员监控并处置。
+[] c.网关层监测全部策略和账户的仓位，以及下单频度等指标，必要时拒绝下单。交易数据同时发送到风控前端，由风控人员实时监控。
+[] d.熔断机制在市场出现大波动或者达到特定的风控或触发风控阈值时系统会自动停止交易
+[] 系统的风控指标主要集中在前端，但也有少部分设置在后端配置文件中，以下则是系统风控指标清单。
+[] （一）GUI端风控指标
+[] 1.OptMain界面风控指标
+[] 2.ExpMain界面风控指标
+[] 3.UlMain界面风控指标
+[] 4.StgMain界面风控指标
+[] （二）服务器端风控指标
+[] 三.系统建设部署方案
+[] （一）系统部署架构
+[] 系统整个架构包括前台架构和后台架构，系统前后台程序启动后，通过centralizer这个程序来传输数据，centralizer会将后台程序收集到的行情数据和计算出的数据等传输到前台程序显示，且通过OptionGUI这个前台程序下单或修改的参数也会通过centralizer程序分发给后台其他程序，每个程序负责不同的功能来完成整个交易系统的运转。以下将介绍这些程序和存放这些程序以及启动程序所需配置文件的目录结构。
+[] 1.前后台程序架构
+[] 1.1后台程序架构
+[] centralizer：数据交互中心，负责后台与前端的数据交互及系统程序间的数据传输
+[] curvefitting：拟合模块，负责接收行情后进行波动率曲线的拟合
+[] mdadapter：行情分发，负责系统内部行情的分发
+[] xparam：读取标的汇率程序
+[] xdatabase：系统参数数据库
+[] xarb：下单交易程序
+[] xrisk：风险控制程序
+[] xes：行情收集程序
+[] 1.2前台程序架构
+[] OptionGUI：前端客户端界面
+[] xriskview：前端的PnL归因与风险矩阵图
+[] 2.前后台目录架构
+[] 1.1后台目录架构
+[] bin：存放系统启动的二进制文件
+[] cfg：该目录存放所有程序启动后需要的配置项
+[] backend：系统的启动程序，运行系统即启用此脚本
+[] sod.sh：每日开盘前将昨天收盘仓位导入今天开盘仓位的脚本
+[] daily：此目录存放每天交易的日志
+[] 1.2前台目录架构
+[] bin：存放系统启动的二进制文件
+[] cfg：该目录存放所有程序启动后需要的配置项
+[] copy_dict：用来拷贝每日系统加载用到的合约字典
+[] login：用来连接服务器与客户端数据传输的脚本
+[] frontend：用来启动客户端的脚本
+[] （二）硬件配置清单
+
+===== TABLE 1 =====
+C++
+Greeks Calculation With Cut On Wings （C++）
+struct VolCurveCut {
+    VolCurveCut(double min_vol=0, double max_cal_vol_mult=0, double max_put_vol_mult=0,
+                double dc=0, double dsm=0, double uc=0, double usm=0) :
+        min_vol(min_vol), max_cal_vol_mult(max_cal_vol_mult), max_put_vol_mult(max_put_vol_mult),
+        dn_cut(dc), dsm(dsm), up_cut(uc), usm(usm) {}
+    double min_vol;
+    double max_cal_vol_mult;
+    double max_put_vol_mult;
+    double dn_cut;
+    double dsm;
+    double up_cut;
+    double usm;
+};
+
+void XCalcOption::calc_greeks_numeric(double te, double ds, double fd, double sk, double vl, double sl, double kc, double kp, int cp,
+                                      const VolCurveCut &cut, int, double fmp, double atm,
+                                      double ssr, double vcr, double scr, XCalcOptionGreek *greeks) {
+
+    //const double fwd_move_pct = 0.01;
+    const double fwd_move_up = 1.0 + fmp, fwd_move_dn = 1.0 - fmp;
+    const double log101 = log(fwd_move_up), log099=log(fwd_move_dn);
+    const double sqrtpi = XCalcMath::Sqrt(3.1415926 * 2);
+    const double slope = 0;
+
+    double sml_vol, sml_vol_u, sml_vol_d;
+    double d, du, dd, pu, pd;
+    double sqr_tte, fk_log, zz, zu, zd, atm_log;
+    double sl_u, sl_d;
+
+    double delta_u, delta_d;
+
+    if( cp != 0 ) {
+        if( hft::greater(te, 0) ) {
+            sqr_tte = XCalcMath::Sqrt(te);
+            fk_log = XCalcMath::Log(fd / sk);
+            atm_log = XCalcMath::Log(atm / sk);
+
+            zz = atm_log / sqr_tte;
+            greeks->smile_vol = calc_volatility(vl, sl, kc, kp, zz, sqr_tte, cut);
+            sml_vol =  greeks->smile_vol * sqr_tte;
+            d = fk_log / sml_vol + sml_vol * 0.5;
+            greeks->tv = calc_tv(ds, cp, d, sml_vol, fd, sk);
+
+            zu = log101 / sqr_tte;
+            zd = log099 / sqr_tte;
+//            sml_vol_u = vl - slope * zu;
+//            sml_vol_d = vl - slope * zd;
+            sml_vol_u = vl - slope * zu + ssr * vcr * fmp;
+            sml_vol_d = vl - slope * zd - ssr * vcr * fmp;
+
+            sl_u = sl + ssr * scr * fmp;
+            sl_d = sl - ssr * scr * fmp;
+
+            zu = (log101 + atm_log) / sqr_tte;
+            zd = (log099 + atm_log) / sqr_tte;
+            sml_vol_u = calc_volatility(sml_vol_u, sl_u, kc, kp, zu, sqr_tte, cut) * sqr_tte;
+            sml_vol_d = calc_volatility(sml_vol_d, sl_d, kc, kp, zd, sqr_tte, cut) * sqr_tte;
+            du = (log101 + fk_log) / sml_vol_u + sml_vol_u * 0.5;
+            dd = (log099 + fk_log) / sml_vol_d + sml_vol_d * 0.5;
+            pu = calc_tv(1.0, cp, du, sml_vol_u, fd * fwd_move_up, sk);
+            pd = calc_tv(1.0, cp, dd, sml_vol_d, fd * fwd_move_dn, sk);
+            greeks->delta = (pu - pd) / fd / (fwd_move_up - fwd_move_dn);
+
+            if( cp == 1 ) {
+                if( greeks->delta > 1.0 ) {greeks->delta = 1.0;}
+                else if( greeks->delta < 0 ) {greeks->delta = 0.0;}
+            } else {
+                if( greeks->delta < -1.0 ) {greeks->delta = -1.0;}
+                else if( greeks->delta > 0 ) { greeks->delta = 0;}
+            }
+
+
+            if(fk_log > 0) {
+                delta_u = cp * XCalcMath::Norm(cp * du ) + exp(-du * du * 0.5) / sqrtpi * ((sl - slope + kp * zu));
+                delta_d = cp * XCalcMath::Norm(cp * dd ) + exp(-dd * dd * 0.5) / sqrtpi * ((sl - slope + kp * zd));
+            } else {
+                delta_u = cp * XCalcMath::Norm(cp * du ) + exp(-du * du * 0.5) / sqrtpi * ((sl - slope + kc * zu));
+                delta_d = cp * XCalcMath::Norm(cp * dd ) + exp(-dd * dd * 0.5) / sqrtpi * ((sl - slope + kc * zd));
+            }
+            greeks->gamma = XCalcMath::Abs( (delta_u - delta_d) * 0.5 * fd * 0.0001 / (fwd_move_up - fwd_move_dn));
+
+            sml_vol_u = calc_volatility(vl + 0.01, sl, kc, kp, zz, sqr_tte, cut) * sqr_tte;
+            sml_vol_d = calc_volatility(vl - 0.01, sl, kc, kp, zz, sqr_tte, cut) * sqr_tte;
+            du = fk_log / sml_vol_u + sml_vol_u * 0.5;
+            dd = fk_log / sml_vol_d + sml_vol_d * 0.5;
+            pu = calc_tv(ds, cp, du, sml_vol_u, fd, sk);
+            pd = calc_tv(ds, cp, dd, sml_vol_d, fd, sk);
+            greeks->vega = (pu - pd) * 0.5;
+
+            greeks->vomma = (pu + pd - 2 * greeks->tv);
+
+            sml_vol_u = calc_volatility(vl, sl + 0.01, kc, kp, zz, sqr_tte, cut) * sqr_tte;
+            sml_vol_d = calc_volatility(vl, sl - 0.01, kc, kp, zz, sqr_tte, cut) * sqr_tte;
+            du = fk_log / sml_vol_u + sml_vol_u * 0.5;
+            dd = fk_log / sml_vol_d + sml_vol_d * 0.5;
+            pu = calc_tv(ds, cp, du, sml_vol_u, fd, sk);
+            pd = calc_tv(ds, cp, dd, sml_vol_d, fd, sk);
+            greeks->vega_skew = (pu - pd) * 0.5;
+
+            if( zz > 0 ) {
+                greeks->vega_kurt_c = 0;
+                sml_vol_u = calc_volatility(vl, sl, kc, kp + 0.01, zz, sqr_tte, cut) * sqr_tte;
+                sml_vol_d = calc_volatility(vl, sl, kc, kp - 0.01, zz, sqr_tte, cut) * sqr_tte;
+                du = fk_log / sml_vol_u + sml_vol_u * 0.5;
+                dd = fk_log / sml_vol_d + sml_vol_d * 0.5;
+                pu = calc_tv(ds, cp, du, sml_vol_u, fd, sk);
+                pd = calc_tv(ds, cp, dd, sml_vol_d, fd, sk);
+                greeks->vega_kurt_p = (pu - pd) * 0.5;
+            } else {
+                greeks->vega_kurt_p = 0;
+                sml_vol_u = calc_volatility(vl, sl, kc + 0.01, kp, zz, sqr_tte, cut) * sqr_tte;
+                sml_vol_d = calc_volatility(vl, sl, kc - 0.01, kp, zz, sqr_tte, cut) * sqr_tte;
+                du = fk_log / sml_vol_u + sml_vol_u * 0.5;
+                dd = fk_log / sml_vol_d + sml_vol_d * 0.5;
+                pu = calc_tv(ds, cp, du, sml_vol_u, fd, sk);
+                pd = calc_tv(ds, cp, dd, sml_vol_d, fd, sk);
+                greeks->vega_kurt_c = (pu - pd) * 0.5;
+            }
+        } else {
+            if( cp * fd >= cp * sk ) {
+                greeks->tv = cp * ( fd - sk );
+                greeks->delta = cp;
+            } else {
+                greeks->tv = 0;
+                greeks->delta = 0;
+            }
+            greeks->gamma = 0;
+            greeks->vega = 0;
+            greeks->vega_skew = 0;
+            greeks->vega_kurt_c = 0;
+            greeks->vega_kurt_p = 0;
+        }
+    }
+}
+
+double XCalcOption::calc_smiled_vol(double tte, double fwd, double stk, double vol, double sml,
+                              double ktc, double ktp, const VolCurveCut& cut, int) {
+    double sqr_tte = XCalcMath::Sqrt(tte);
+    double fk_log = XCalcMath::Log(fwd / stk);
+    double zz = fk_log / sqr_tte;
+    return calc_volatility(vol, sml, ktc, ktp, zz, sqr_tte, cut);
+}
+
+void XCalcOption::get_dc_uc_strike(double dc, double uc, double atm, double tte, double &dcstrike, double &ucstrike) {
+    dcstrike = exp(dc) * atm;
+    ucstrike = exp(uc) * atm;
+}
+
+double XCalcOption::calc_volatility(double vol, double sml, double ktc, double ktp, double zz, double sqrt_tte, const VolCurveCut & cut) {
+    if( zz < 0 ) {
+        return XCalcMath::Max(cut.min_vol, XCalcMath::Min(vol + sml * zz + 0.5 * ktc * zz * zz, vol * cut.max_cal_vol_mult));
+    } else {
+        return XCalcMath::Max(cut.min_vol, XCalcMath::Min(vol + sml * zz + 0.5 * ktp * zz * zz, vol * cut.max_put_vol_mult));
+    }
+}
+
+===== TABLE 2 =====
+VBScript
+Greeks Calculation Without Cut on Wings (VBA)
+Function bs_sigma(X, F, V, S, K, t)
+
+    zz = Log(F / X) / Sqr(t)
+    bs_sigma = V + S * zz + 0.5 * K * zz * zz
+
+End Function
+
+Function bs_d1(X, F, sv, t)
+
+    bs_d1 = Log(F / X) / (sv * Sqr(t)) + 0.5 * sv * Sqr(t)
+
+End Function
+
+Function bs_d2(X, F, sv, t)
+
+    d1 = bs_d1(X, F, sv, t)
+    bs_d2 = d1 - sv * Sqr(t)
+
+End Function
+
+Function bs_tv(X, F, V, S, K, t, r)
+
+    sv = bs_sigma(X, F, V, S, K, t)
+    
+    d1 = bs_d1(X, F, sv, t)
+    d2 = bs_d2(X, F, sv, t)
+    
+    dsf = Exp(-r * t)
+    
+    bs_tv = dsf * (F * Application.WorksheetFunction.Norm_S_Dist(d1, True) - X * Application.WorksheetFunction.Norm_S_Dist(d2, True))
+
+End Function
+
+Function bs_put(X, F, V, S, K, t, r)
+
+    sv = bs_sigma(X, F, V, S, K, t)
+    
+    d1 = bs_d1(X, F, sv, t)
+    d2 = bs_d2(X, F, sv, t)
+    
+    dsf = Exp(-r * t)
+    
+    bs_put = -dsf * (F * Application.WorksheetFunction.Norm_S_Dist(-d1, True) - X * Application.WorksheetFunction.Norm_S_Dist(-d2, True))
+
+End Function
+
+Function bs_delta(X, F, V, S, K, t, r)
+
+    dd = 0.01
+    tv_up = bs_tv(X, F + dd, V, S, K, t, r)
+    tv_dn = bs_tv(X, F - dd, V, S, K, t, r)
+    
+    res = (tv_up - tv_dn) / (2 * dd * Exp(-r * t))
+    
+    bs_delta = Application.WorksheetFunction.Max(0, Application.WorksheetFunction.Min(res, 1))
+    
+    
+End Function
+
+
+Function bs_vega(X, F, V, S, K, t, r)
+
+    dd = 0.01
+    tv_up = bs_tv(X, F, V + dd, S, K, t, r)
+    tv_dn = bs_tv(X, F, V - dd, S, K, t, r)
+    
+    bs_vega = (tv_up - tv_dn) / 2
+    
+    
+End Function
+
+
+Function bs_skew(X, F, V, S, K, t, r)
+
+    dd = 0.01
+    tv_up = bs_tv(X, F, V, S + dd, K, t, r)
+    tv_dn = bs_tv(X, F, V, S - dd, K, t, r)
+    
+    bs_skew = (tv_up - tv_dn) / 2
+    
+    
+End Function
+
+Function bs_kurt(X, F, V, S, K, t, r)
+
+    dd = 0.01
+    tv_up = bs_tv(X, F, V, S, K + dd, t, r)
+    tv_dn = bs_tv(X, F, V, S, K - dd, t, r)
+    
+    bs_kurt = (tv_up - tv_dn) / 2
+    
+    
+End Function
+
+===== TABLE 3 =====
+ | MaxLmtNum: 被动单发单阈值
+SentLmtNum: 被动单已发数量，
+IocOn 通过对价成交的方式开始套利对冲交易。
+LmtOn 通过限价单的方式开始套利对冲交易。
+
+===== TABLE 4 =====
+ | PnlSOD: 该到期日从开始交易到今日开盘的总损益
+PnlChg: 当日实时理论价损益
+MtMPnl: 当日实时市场中间价损益
+SODPosPnl: 以当日开盘仓位为基础计算的实时理论损益
+ArbPnl.I: 当日根据市场的理论价格来评估损益。定价根据I.Curve。
+ArbPnl.A: 根据持仓数调整过后的理论价格来评估损益。定价根据Final.Curve。
+ArbCash:目前仓位的现金流=卖出期权得到的现金流-买入期权付出的现金流
+
+===== TABLE 5 =====
+价差表由后台配置 | CQItm:实值合约报价数量 CQOtm:虚值合约报价数量
+CQSize:持续报价手数 CQGroup:实际报价所用价差表
+RfqSize:回应询价手数 RfqGroup:回应询价价差表
+
+===== TABLE 6 =====
+ | QuoteDeltaLimit: 做市持仓最大Delta值
+MaxPos4Q：做市最大持仓数
+RfqOn：询价回应开关
+QuoteOn：持续回应开关
+
+===== TABLE 7 =====
+ | 
+
+===== TABLE 8 =====
+ | 计划在M1上以500秒的时间拿5000正Vega的头寸
+在VolPT处输入500
+在VolPO处输入5000
+
+===== TABLE 9 =====
+ | 打开ProgOn让系统开始执行目标任务
+可以观察到，随着VolPT的倒计时，VolPO想拿的头寸越来越少，VolOffs拿到的头寸越来越多
+
+===== TABLE 10 =====
+ | 当500秒倒计时结束后，VolPO清零，VolOffs变为5000
+
+===== TABLE 11 =====
+ | 此时观察ExpMain中的持仓头寸，可以看到AccVega为4789，系统已将头寸建立成功，同时其他风险敞口依然保持在零附近。
+
+===== TABLE 12 =====
+ | 1. 下单
+选择交易合约：期权页面下选择一个期权合约并且双击MBP或者MAP
+输入交易数量：在手动交易界面 数量区域填写 手动交易的数量
+输入交易价格：鼠标左键点击相应价格所在的行
+确认交易：点击买入或者卖出
+买单下单成功后，可在买单列看到该买单的数量。卖单下单成功后，可在卖单列看到该卖单的数量。
+F3加载更低的价格，F4加载更高的价格
+2. 撤单
+双击买单或者卖单上报出的单子，买单或者卖单上的手数消失即表示撤单成功
+
+===== TABLE 13 =====
+ | 下单
+选择交易合约：双击合约上的P.PosL
+选择交易价格和数量：在手动交易界面 BID或者ASK区对应的价格上输入想要成交的数量
+确认交易：在BID或者ASK中输入好数量后按ENTER键
+买单下单成功后，可在SBS看到该买单的数量。卖单下单成功后，可在SAS列看到该卖单的数量。
+F3加载更低的价格，F4加载更高的价格
+撤单
+双击SBS或者SAS上报出的单子，买单或者卖单上的手数消失即表示撤单成功
+
+===== TABLE 14 =====
+参数 | 描述
+OpenLimit | 设置开仓数量
+OpenCount | 显示已开仓数
+Bias | 对应期权合约的买卖单价格的偏度：
+当买单价格 BidPrice > LastPrice + Bias，该买单会被过滤掉。 
+当卖单价格 AskPrice < LastPrice – Bias，该卖单会被过滤掉。
+CxlNum | 显示当前合约已撤单次数
+
+===== TABLE 15 =====
+MaxArbPos | 设置单个合约最大仓位
+MaxStrikePos | 设置每个行权价上对应认购与认沽之和的最大值
+QuoteDeltaLimit | 设置自动化做市时最大正/负 Delta 仓位。如果报单超过了该值，Quote就会停止报单
+MaxPosForQuote | 设置每个合约做市的最大仓位数，如果Quote累计持有仓数超过了该值，Quote就会停止报单。
+MaxLongDelta | 当AccDelta > MaxLongDelta * LmtCxlRatio时，系统会取消已经发出去的会增加Delta的单。但当MaxLongDelta * LmtCxlRatio > AccDelta > MaxLongDelta，系统不会再buy call或者sell put，但会保留挂单。
+当AccDelta < MaxShortDelta * LmtCxlRatio时，系统会取消已经发出去的会减少Delta的单。但当MaxShortDelta * LmtCxlRatio < AccDelta < MaxLongDelta，系统不会再sell call或者buy put，但会保留挂单。
+MaxShortDelta | 当AccDelta > MaxLongDelta * LmtCxlRatio时，系统会取消已经发出去的会增加Delta的单。但当MaxLongDelta * LmtCxlRatio > AccDelta > MaxLongDelta，系统不会再buy call或者sell put，但会保留挂单。
+当AccDelta < MaxShortDelta * LmtCxlRatio时，系统会取消已经发出去的会减少Delta的单。但当MaxShortDelta * LmtCxlRatio < AccDelta < MaxLongDelta，系统不会再sell call或者buy put，但会保留挂单。
+MinIocSz | 设置对价单最小的下单手数
+MaxIocSz | 设置对价单最大的下单手数
+MinLmtSz | 设置限价单最小的下单手数
+MaxLmtSz | 设置限价单最大的下单手数
+MaxIocDelta | 每笔对价单交易可以允许暴露的最大Greeks值
+MaxIocVega | 每笔对价单交易可以允许暴露的最大Greeks值
+MaxIocSml | 每笔对价单交易可以允许暴露的最大Greeks值
+MaxIocKurt | 每笔对价单交易可以允许暴露的最大Greeks值
+MaxLmtDelta | 每笔限价单交易可以允许暴露的最大Greeks值
+MaxLmtVega | 每笔限价单交易可以允许暴露的最大Greeks值
+MaxLmtSml | 每笔限价单交易可以允许暴露的最大Greeks值
+MaxLmtKurt | 每笔限价单交易可以允许暴露的最大Greeks值
+
+===== TABLE 16 =====
+IocOrdRate | 设置对价单最大每秒下单次数
+LmtOrdRate | 设置限价单最大每秒下单次数
+
+===== TABLE 17 =====
+PnlChg | 显示当前品种总Pnl
+MaxPnl | 显示当日最大的 PnL
+MaxPnlLoss | 设置最大回撤阈值
+Pos | 显示当前品种总仓位
+PosAL | 设置系统预警仓位
+PosSL | 设置系统停止开仓仓位
+Delta | 显示当前品种总Delta
+DeltaAL | 设置系统预警Delta绝对值
+DeltaSL | 设置系统停止增加或减少Delta交易的最大Delta绝对值
+Gamma | 显示当前品种总Gamma
+GammaAL | 设置系统预警Gamma绝对值
+GammaSL | 设置系统停止增加或减少Delta交易的最大Gamma绝对值
+Vega | 显示当前品种总Vega
+VegaAL | 设置系统预警Vega绝对值
+VegaSL | 设置系统停止增加或减少Delta交易的最大Vega绝对值
+Theta | 显示当前品种总Theta
+ThetaAL | 设置系统预警Theta绝对值
+ThetaSL | 设置系统停止增加或减少Delta交易的最大Theta绝对值
+Margin | 显示当前品种总占用保证金
+MarginAL | 设置系统预警保证金
+MarginSL | 设置系统停止继续增加保证金交易的最大保证金值
+Pnl | 显示当前品种总Pnl
+PnlAL | 设置系统预警Pnl值
+PnlSL | Pnl绝对值达到设置的此值时会停止发单
+
+===== TABLE 18 =====
+Order.Throttles | 定义单位时间（每秒，每分钟，每小时，每天）内系统可以下单的最大数量
+Notional.Throttles | 定义单位时间（每秒，每分钟，每小时，每天）内系统可以下的最大名义本金
+IocStayPeriod | 设置Ioc单撤单时间，超过多少毫秒即撤单
+CxlInterval | 设置未接收到撤单信息隔多少毫秒继续发送撤单请求
+SSUnitChangeLimit | 设置SSunit变化的最大值，如果通过在GUI端设置减少或增大SSunit试超过这个值，即此动作不会生效
+BssMaxOffsetRate | 设置通过ExpOfs界面下获取仓位方式获取仓位时每秒获取的对应Greeks仓位最大值，若超过此值，获取仓位的动作失效
+FwdMaxOffsetRate | 设置通过ExpOfs界面下获取仓位方式获取仓位时每秒获取的对应Greeks仓位最大值，若超过此值，获取仓位的动作失效
+VolMaxOffsetRate | 设置通过ExpOfs界面下获取仓位方式获取仓位时每秒获取的对应Greeks仓位最大值，若超过此值，获取仓位的动作失效
+SmlMaxOffsetRate | 设置通过ExpOfs界面下获取仓位方式获取仓位时每秒获取的对应Greeks仓位最大值，若超过此值，获取仓位的动作失效
+KtcMaxOffsetRate | 设置通过ExpOfs界面下获取仓位方式获取仓位时每秒获取的对应Greeks仓位最大值，若超过此值，获取仓位的动作失效
+KtpMaxOffsetRate | 设置通过ExpOfs界面下获取仓位方式获取仓位时每秒获取的对应Greeks仓位最大值，若超过此值，获取仓位的动作失效
+
+===== TABLE 19 =====
+服务器名 | 型号 | 硬件配置 | 系统 | 软件
+服务器 | Dell R740 | CPU 2*Gold 6250   处理器(3.9GHz/32核) 
+内存 4*32GB   DDR4 2933MHz 
+磁盘 3*960GB   SSD 固态硬盘（RAID1+1hot spare） 
+网络 1*板载千兆网卡 
+如果用盛立柜台：2*Solarflare X2522-Plus低时延万兆网卡（带原厂10G光模块和Onload   License） | 操作系统: ubuntu22.04 (64bit) -server英文版以上 | Vim
+nettools（可以使用ifconfig）
+ntpdate
+客户端 | 普通PC |  | ubuntu18.04 (64bit) –desktop 英文版以上 | vim, nettools（可以使用ifconfig）

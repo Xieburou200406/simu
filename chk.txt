@@ -1,0 +1,138 @@
+[] ETF期权交易操作评分标准（检查点清单）
+[] ETF期权交易操作评分标准（检查点清单）
+[] 总分：100分 | 检查点：33个
+[] 评分等级
+[] 日志位置：服务器jannie，目录/opt/option/env/simu/zhusz/510500/daily/yyyyMMdd/Centralizer/centralizer.log。510300和510500的日志都在这个文件下面。yyyyMMdd是需要打分的日期。
+[] 使用服务器paul上的脚本/opt/qs/scripts/qs_trade_eval.sh，运行在jannie服务器上，获取打分用的日志和依据。脚本运行会比较慢，耐心等待运行结束。
+[] 根据/opt/qs/scripts/qs_trade_eval.sh的结果给510300和510500的操作打分，打分结果放到ETF期权交易操作评分报告。打分结果要详细，具体到每个操作时间段的得分情况。打分的依据在ETF期权交易操作评分标准（检查点清单）
+[] 日志层级说明
+[] 日志格式：层级|账户|交易所|标的|到期日|...|参数名
+[] 重要：检查参数时，必须确认是对应层级的参数被正确修改。不同层级可能有相同名字的参数，它们的作用不一样。
+[] grep 命令说明
+[] 为什么用"publishing"而不是"value changed"：
+[] 交易员可修改的参数：修改后会出现"value changed"，同时也会出现"publishing"
+[] 交易员不可修改的参数或前一天的数值：系统启动时不会出现"value changed"，但只要参数加载了，publishing还是会有
+[] 因此在检查日志、给操作打分时，只需提取"publishing"
+[] 一定不要一个参数一个参数提取，可以用grep -E提取所有的参数到一个文件，提取一次后一起分析。
+[] 只有两个参数 rMaxPnlReset和rClearRiskPnl需要grep "value changed"。因为这两个参数没有publishing
+[] 按层级grep的交易所筛选规则：
+[] 一、开盘前准备阶段（09:00-09:15）| 7个检查点 | 24分
+[] 请注意检查ExpVol,ExpMain页面下的数字是昨天收盘时候的数字，或者是nan,inf。不能是空的。如果是空的请找IT人员解决。
+[] 510300和510500，要用期货定价，不能用现货定价（慢），所以F.cUlWeight=100，U.cUlWeight=0
+[] 二、集合竞价处理与盘口校验（09:25-09:29）| 9个检查点 | 26分
+[] 三、正式开盘操作（09:30）| 4个检查点 | 12分
+[] 四、午盘关闭（11:28）| 2个检查点 | 12分
+[] 说明：aArbSentBidPx/aArbSentAskPx在O层级（OptMain）才有意义，E层级的可以忽略。O层级交易所为SHEX。
+[] 五、下午开盘（13:00）| 6个检查点 | 18分
+[] 六、收盘前风险确认（14:50-14:57）| 3个检查点 | 5分
+[] 七、收盘归因（15:00）| 2个检查点 | 3分
+[] 汇总
+[] ComboMode 值说明
+[] 备注
+[] 监控类参数（如 aSentLmtOrdNum）需要检查publishing日志
+[] aArbSentBidPx/aArbSentAskPx 用于检查是否有挂单，值为0表示无挂单
+[] aArbSentBidPx/aArbSentAskPx在O层级（OptMain）才有意义，E层级的可以忽略
+[] 找不到publishing记录 = 参数未加载/未设定
+[] 检查参数时必须确认层级正确：不同层级的同名参数作用不同
+[] grep Fut层级参数时加 grep "CFFEX"，Stg层级不需要额外keyword，其他层级加 grep "SHEX"
+[] 修正: CP12(rClearRiskPnl)和CP14(rMaxPnlReset)不在publishing日志中，改为通过"value changed on pipe"检查。
+[] CP12 grep命令: grep "value changed on pipe" | grep rClearRiskPnl
+CP14 grep命令: grep "value changed on pipe" | grep rMaxPnlReset
+
+===== TABLE 1 =====
+等级 | 分数范围 | 说明
+优秀 | ≥95分 | 操作规范，无明显失误
+及格 | ≥90分 | 基本操作正确，有少量改进空间
+不及格 | <90分 | 存在明显操作失误或遗漏
+
+===== TABLE 2 =====
+层级代码 | 含义 | 说明
+O | OptMain | 期权主模块（期权合约级）
+E | ExpMain/ExpVol | 到期日模块（到期日级）
+U | UlMain | 标的模块（标的级）
+S | StgMain | 策略模块（账户级）
+F | Fut | 期货模块（期货合约级）
+
+===== TABLE 3 =====
+Bash
+grep publishing centralizer.log | grep -E '参数名1|参数名2' > /tmp/ops.log
+
+===== TABLE 4 =====
+层级 | grep交易所筛选 | 说明
+F（Fut） | 加 grep "CFFEX" | Fut层级所有合约在中金所
+S（Stg） | 不需要额外keyword | Stg层级无交易所字段
+其他层级（O/E/U） | 加 grep "SHEX" | ETF期权合约在上交所
+
+===== TABLE 5 =====
+序号 | 检查点 | 参数（层级） | grep命令 | 时间窗口 | 分值
+1 | OptMain模块ComboMode设置为Both | O.rComboMode=3，要看这个时间段内所有的rComboMode。 | grep publishing | grep "SHEX" | grep rComboMode | 09:00-09:15 | 4分
+2 | ExpMain模块MaxLmtNum设置为500（或600） | E.aMaxLmtOrdNum=500 | grep publishing | grep "SHEX" | grep aMaxLmtOrdNum | 09:00-09:15 | 4分
+3 | UlMain模块IocOn设置为Y | U.aEnableIoc=1 | grep publishing | grep "SHEX" | grep aEnableIoc | 09:00-09:15 | 4分
+4 | UlMain模块MinManTrdPnL设置为-20 | U.aMinManualTradePnl=-20 | grep publishing | grep "SHEX" | grep aMinManualTradePnl | 09:00-09:15 | 2分
+5 | 期货定价合约UlType设置（Trade→Simple切换） | F.aUlpType=0/1 | grep publishing | grep "CFFEX" | grep aUlpType | 09:00-09:15 | 4分
+6 | 定价合约UlWeight=100 | F.cUlWeight=100
+U.cUlWeight=0 | grep publishing | grep "CFFEX" | grep cUlWeight
+grep publishing | grep "SHEX" | grep cUlWeight | 09:00-09:15 | 3分
+7 | 非定价合约UlWeight=0 | F.cUlWeight=0 | grep publishing | grep "CFFEX" | grep cUlWeight | 09:00-09:15 | 3分
+
+===== TABLE 6 =====
+序号 | 检查点 | 参数（层级） | grep命令 | 时间窗口 | 分值
+8 | BssMode设置为Smooth | E.cBssMode=1 | grep publishing | grep "SHEX" | grep cBssMode | 09:25-09:29 | 4分
+9 | CFMode设置为FitPx | E.cCFMode=1 | grep publishing | grep "SHEX" | grep cCFMode | 09:25-09:29 | 4分
+10 | 执行CFReset操作 | E.cCFReset=1 | grep publishing | grep "SHEX" | grep cCFReset | 09:25-09:29 | 4分
+11 | CFPanic=N | E.cPanic=0 | grep publishing | grep "SHEX" | grep cPanic | 09:25-09:29 | 2分
+12 | 拟合后执行rclear | E.rClearRiskPnl=1 | grep "value changed on pipe" | grep rClearRiskPnl | 09:25-09:29 | 4分
+13 | 参数未触极值（Min/Max） | E.cMinImpliedVol等未越界 | grep publishing | grep "SHEX" | grep cMinImpliedVol | 09:25-09:29 | 3分
+14 | StgMain执行MaxPnlReset | S.rMaxPnlReset=1 | grep "value changed on pipe" | grep rMaxPnlReset | 09:25-09:29 | 2分
+15 | StgMain设置Panic=N | S.rPanic=0 | grep publishing | grep rPanic | 09:25-09:29 | 2分
+16 | StgMain设置MaxPnlChg=2000 | S.rMaxPnlLoss=2000 | grep publishing | grep rMaxPnlLoss | 09:25-09:29 | 1分
+
+===== TABLE 7 =====
+序号 | 检查点 | 参数（层级） | grep命令 | 时间窗口 | 分值
+17 | ExpVol执行CFReset | E.cCFReset=1 | grep publishing | grep "SHEX" | grep cCFReset | 09:30-09:30:10 | 3分
+18 | ExpMain设置LmtOn=Y | E.aEnableLmt=1 | grep publishing | grep "SHEX" | grep aEnableLmt | 09:30-09:31 | 3分
+19 | ExpMain设置IocOn=Y | E.aEnableIoc=1 | grep publishing | grep "SHEX" | grep aEnableIoc | 09:30-09:31 | 2分
+20 | 检查SentLmtNum和MaxLmtNum，必要时增加 | E.aSentLmtOrdNum < E.aMaxLmtOrdNum | grep publishing | grep "SHEX" | egrep “aSentLmtOrdNum|aMaxLmtOrdNum" | 09:30-11:28 | 4分
+
+===== TABLE 8 =====
+序号 | 检查点 | 参数（层级） | grep命令 | 时间窗口 | 分值
+21 | StgMain设置Panic=Y | S.rPanic=1 | grep publishing | grep rPanic | 11:28-11:28:30 | 6分
+22 | 确认OptMain中SBP/SAP挂单为0 | O.aArbSentBidPx=0, O.aArbSentAskPx=0 | grep publishing | grep "SHEX" | grep aArbSentBidPx | 11:28-11:30 | 6分
+
+===== TABLE 9 =====
+序号 | 检查点 | 参数（层级） | grep命令 | 时间窗口 | 分值
+23 | ExpVol设置BssMode=Smooth | E.cBssMode=1 | grep publishing | grep "SHEX" | grep cBssMode | 13:00-13:01 | 3分
+24 | ExpVol设置CFMode=FitPx | E.cCFMode=1 | grep publishing | grep "SHEX" | grep cCFMode | 13:00-13:01 | 3分
+25 | ExpVol执行CFReset | E.cCFReset=1 | grep publishing | grep "SHEX" | grep cCFReset | 13:00-13:01 | 3分
+26 | StgMain设置Panic=N | S.rPanic=0 | grep publishing | grep rPanic | 13:00-13:01 | 3分
+27 | ExpMain设置IocOn=Y, LmtOn=Y | E.aEnableIoc=1, E.aEnableLmt=1 | grep publishing | grep "SHEX" | grep aEnableIoc | 13:00-13:01 | 3分
+28 | 检查SentLmtNum和MaxLmtNum，必要时增加 | E.aSentLmtOrdNum < E.aMaxLmtOrdNum | grep publishing | grep "SHEX" | grep aSentLmtOrdNum | 13:01-14:45 | 3分
+
+===== TABLE 10 =====
+序号 | 检查点 | 参数（层级） | grep命令 | 时间窗口 | 分值
+29 | StgMain设置Panic=Y | S.rPanic=1 | grep publishing | grep rPanic | 14:45-14:55 | 2分
+30 | 14:57后不再报撤单（集合竞价） | O.aArbSentBidPx=0, O.aArbSentAskPx=0 | grep publishing | grep "SHEX" | grep aArbSentBidPx | 14:45-15:05 | 1分
+31 | ExpRisk设置SplitToNet=Y | E.rSplitToNet=1 | grep publishing | grep "SHEX" | grep rSplitToNet | 14:45-14:55 | 2分
+
+===== TABLE 11 =====
+序号 | 检查点 | 参数（层级） | grep命令 | 时间窗口 | 分值
+32 | 收到集合竞价后执行CFReset重拟合 | S.cCFReset=1 或 E.cCFReset=1 | grep publishing | grep cCFReset | 15:00-15:05 | 1分
+33 | 点击Affirm保存数据 | E.aAffirm=1或者E.aAffirm=0,有数值就可，不需要一定为0或者1 | grep publishing | grep "SHEX" | grep aAffirm | 15:00-15:10 | 2分
+
+===== TABLE 12 =====
+维度 | 时间段 | 检查点数 | 分值
+开盘前准备 | 09:00-09:15 | 7个 | 24分
+集合竞价与盘口校验 | 09:25-09:29 | 9个 | 26分
+正式开盘操作 | 09:30 | 4个 | 12分
+午盘关闭 | 11:28 | 2个 | 12分
+下午开盘 | 13:00 | 6个 | 18分
+收盘前风险确认 | 14:45-14:55 | 3个 | 5分
+收盘归因 | 15:00-15:10 | 2个 | 3分
+合计 | - | 33个 | 100分
+
+===== TABLE 13 =====
+值 | 含义
+0 | Neither（不使用组合保证金）
+1 | Comb（组合发送）
+2 | Split（拆分）
+3 | Both（标准值）
