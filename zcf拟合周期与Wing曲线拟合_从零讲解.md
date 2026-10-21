@@ -104,9 +104,9 @@ stk_fwd_ask = (C_ask − P_bid) / D + K     ← 用 Call 卖价、Put 买价（�
 
 ---
 
-### 第 3 步：`update_smoothed_fwd` —— 减基差 + 平滑 → `cUsedFwd`
+### 第 3 步：`update_smoothed_fwd` —— 算基差 + 平滑慢变量 → `cUsedFwd`
 
-第 2 步的 `cImpliedFwd` 是"从期权盘口反推的远期"，但它和现货之间夹着一层基差，而且逐周期抖动。这一步把它**减掉基差、做平滑**，得到最终给定价用的 `cUsedFwd`。这是和 `calc_implied_fwd` **完全分开**的另一个函数。
+第 2 步的 `cImpliedFwd` 是"从期权盘口反推的远期"，但它和现货之间夹着一层基差，而且逐周期抖动。这一步先**算基差**，再把远期拆成"快变量（现货）+ 慢变量（基差）"——**只对慢变量做 EMA 平滑、快变量原样保留**，得到最终给定价用的 `cUsedFwd`。这是和 `calc_implied_fwd` **完全分开**的另一个函数。
 
 #### 3.1 基差：远期和现货之间差的那一块（flow §2.4）
 
@@ -119,16 +119,35 @@ stk_fwd_ask = (C_ask − P_bid) / D + K     ← 用 Call 卖价、Put 买价（�
 
 基差衡量"现货和远期/期货之间的偏离"，是平滑时用来"锚定慢变量"的工具（基差动得慢，现货动得快，所以只平滑基差、保留现货的快反应——这就是你之前问过"为什么要有基差、为什么有两个公式"的答案）。
 
-#### 3.2 减基差 + EMA 平滑 → `cUsedFwd`
+#### 3.2 减现货、平滑慢变量、再加回现货 → `cUsedFwd`
 
-`update_smoothed_fwd` 把第 2 步的远期做：
+`update_smoothed_fwd` 的关键**不是**"对远期直接做 EMA"——那会把现货的快速跳动也一起抹平，导致定价远期 `cUsedFwd` 滞后于现货。正确做法是把远期拆成"快变量 + 慢变量"两部分分别对待：
+
+- 恒等式：`forward = spot − basis`，其中 `basis = spot − forward`（equity 下 `basis = bary_px − cImpliedFwd·opt_dsf`，future 下 `= bary_px − cImpliedFwd`）。
+- **spot（bary_px）是快变量**：tick 级跳动；**basis 是慢变量**：sticky，变动缓慢。
+
+只平滑慢变量 basis，快变量 spot 原样保留：
 
 ```
-smoothed_fwd = EMA( cImpliedFwd − 基差项 )     ← 先剥离基差趋势，再做指数平滑
-cUsedFwd     = smoothed_fwd + 基差项           ← 把基差加回来，得到贴近现货口径的远期
+basis_slow = EMA( basis )          ← 只磨平慢变量 basis（= spot − cImpliedFwd）
+cUsedFwd   = spot − basis_slow     ← 快变量 spot 原样，得到"平滑但紧跟现货"的远期
 ```
 
-（实际实现是"对远期减基差后做 EMA，再叠加回稳定基差"，核心目的是：**过滤掉盘口瞬间抖动，得到一个连续、可预测的远期地基**。）平滑后的 `cUsedFwd` 就是全月期权定价的"远期地基"之一，喂给第 7 步 `calc_tv`。
+**等价写法**（代码里常这样写，避免额外存变量）：
+
+```
+temp         = cImpliedFwd − spot    ← 这步"减"的是**现货**，得到 −basis（一个慢变量）
+smoothed_tmp = EMA( temp )           ← 对慢变量做指数平滑
+cUsedFwd     = smoothed_tmp + spot   ← 这步"加回"的也是**现货**，快变量零延迟
+```
+
+所以你问的"减去有什么意义"——**减的是现货（driver），不是基差本身**；减完得到 `−basis`，这才是适合做 EMA 的慢变量。平滑后再"加回"现货，于是 `cUsedFwd` 既平滑（basis 被磨平）又紧跟现货（spot 零延迟）。若直接 `EMA(cImpliedFwd)`，spot 的快速变动也被一起平滑，`cUsedFwd` 会滞后于现货——这正是要避免的。
+
+> 数字例子：basis 恒为 0.5（慢），spot 从 100 跳到 101（快）。
+> - t1：forward = 100 − 0.5 = 99.5；
+> - t2：forward = 101 − 0.5 = 100.5。
+> - 直接 EMA(forward)：要从 99.5 慢慢爬到 100.5，滞后；
+> - 分解法：basis_slow = EMA(0.5) = 0.5 不变，`cUsedFwd = spot − 0.5`：t1→99.5、t2→100.5 瞬间跟上。
 
 > 注意：后面 zarb 还会用 `calc_dynamic_fwd` 把 `cUsedFwd` 再"夹"向可成交的合成盘（你之前问过的背离夹值），但那是在 zarb 侧，不在本步。
 
