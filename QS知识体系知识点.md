@@ -341,7 +341,7 @@ rVegaPnl 闭环（路径积分法）：按事件顺序 Σ Vega_before×Δvol×10
 13. Mark=cImplied\* 滑窗均值≥100 点；发布全月全部期权。
 14. put delta = call delta − 1 永远成立；call delta 沿 strike 强制递减 ≥0。
 15. EOD：Used\*Eod 存档、全 expiry 切 Manual——次日人工起步。
-16. **Delta 软对冲**：Long Δ → Fwd 调低 → TV 降 → 卖 Delta 腿有利可图；aFwdAdjust 方向必与 AccuDelta 相反。
+16. **Delta 软对冲**：Long Δ → Fwd 调低 → 认购 TV 降、认沽 TV 升（认购对远期正敏感、认沽负敏感）→ 卖 Call/买 Put 均有利；aFwdAdjust 方向必与 AccuDelta 相反。
 17. IOC size = pnl_buf·aggressivity/theo_shift；篮子 8 轮、任一腿不满足 MinIocPnl 整体降尺寸。
 18. theo_shift 的 Unit 全在分母——放大 Unit 平仓更容易。
 19. 下单链 ArbOrderMgr → RzOmsExchConnector → RzOms → CTP；PendingRisk 超 lost 全停。

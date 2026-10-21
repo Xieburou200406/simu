@@ -1,24 +1,25 @@
 # QS 公式手册（zcf × zarb 全链路，按定价链路编号）
 
-> **使用说明**：公式按"时间 → 远期 → 曲线 → 价格 → 拟合 → 平滑 → 调价 → 下单 → 策略 → 账目"的数据流顺序编号（§1~§12），正好是 zcf 七步流水线 + zarb 三执行流的骨架。每个公式给三件套：**回答什么问题 → 公式 → 出处（文档:行号）**。符号全局统一见 §0。
+> **使用说明**：公式按"时间 → 远期 → 曲线 → 价格 → 拟合 → 平滑 → 调价 → 下单 → 策略 → 账目"的数据流顺序编号（§1~§12），正好是 zcf 七步流水线 + zarb 三执行流的骨架。每个公式给三件套：**回答什么问题 → 公式 → 出处（文档:行号）**。符号全局统一见 §0。  
 > 出处简称：flow=zarb-zcf-flow.md，dh=delta-hedge.md，volarb=vol-arbitrage.md，pnl=check-risk-pnl-manual.md。
 
 ## 0. 符号总表
 
-| 符号 | 含义 | 来源/单位 |
-|------|------|----------|
-| F / K | 远期价 / 行权价 | K 来自盘口，F 见 §2 |
-| atm | Wing 曲线中心 | cAtm，见 §6（≈平滑远期） |
-| tte | 剩余到期时间 | 年化，**工作日/252**（§1） |
-| pct_day | 当日已过交易时长占比 | 0→1 日内插值用 |
-| dsf / DF | 贴现因子 | **自然日/365**（§1） |
-| vol, sml, ktc, ktp | Wing 四参数 | §3；OneKurt 时 ktp=ktc |
-| z | 标准化对数行权价 | §3 |
-| SSR, VCR, SCR | 曲线联动三系数 | vol/fwd、sml/fwd 联动强度 |
-| mult | 拟合权重 | cCurveFittingMult |
-| AccuΔ/Vega/Skw/KtC/KtP | 五维累计敞口 | zarb 逐周期重算 |
-| offs, elas, unit, rstc | 弹性四件套 | Underlying 级参数 |
-| driver | 到期月对冲基准合约 | 期货或现货 |
+| 符号                     | 含义         | 来源/单位                |
+| ---------------------- | ---------- | -------------------- |
+| F / K                  | 远期价 / 行权价  | K 来自盘口，F 见 §2        |
+| atm                    | Wing 曲线中心  | cAtm，见 §6（≈平滑远期）     |
+| tte                    | 剩余到期时间     | 年化，**工作日/252**（§1）   |
+| pct_day                | 当日已过交易时长占比 | 0→1 日内插值用            |
+| dsf / DF               | 贴现因子       | **自然日/365**（§1）      |
+| vol, sml, ktc, ktp     | Wing 四参数   | §3；OneKurt 时 ktp=ktc |
+| z                      | 标准化对数行权价   | §3                   |
+| SSR, VCR, SCR          | 曲线联动三系数    | vol/fwd、sml/fwd 联动强度 |
+| mult                   | 拟合权重       | cCurveFittingMult    |
+| AccuΔ/Vega/Skw/KtC/KtP | 五维累计敞口     | zarb 逐周期重算           |
+| offs, elas, unit, rstc | 弹性四件套      | Underlying 级参数       |
+| driver                 | 到期月对冲基准合约  | 期货或现货                |
+
 
 ## 1. 日历与贴现——时间怎么算
 
@@ -46,6 +47,7 @@ dsf_eod = exp(−rate· dsc_days /365)       # eod 用原值，不再减 1
 > **pct_day 的自洽性**：pct_day = 到收盘还剩的交易时长 ÷ 全天交易时长，开盘 ≈1、收盘 ≈0，日内从 1 滑到 0。代回公式：开盘 tte=(full+1)/252=tte_sod、收盘 tte=full/252=tte_eod——**日内插值就是在 sod/eod 两个锚点之间线性滑动**；dsf 的 (dsc_days+pct_day) 同理（开盘多贴 1 天）。252=一年交易日总数，365=一年自然日总数：分子是剩余天数、分母是全年天数，相除即年化比例。
 >
 > ⚠️ flow:91 原文写 `dsf_sod/eod=exp(−rate·(days±1)/365)`，"±1" 字面两边各动一格则 sod/eod 差两天，与 tte 锚点差一天不对称；上式按对称结构书写（eod 用原值不减 1），确切口径以源码 init_df_and_mat（cfexpiry.cpp:408-443）为准。
+
 
 ## 2. 合成远期与平价——远期从哪来
 
@@ -113,6 +115,7 @@ z = ln(atm / K) / √tte
 > **ATM 免疫 Skew 的代数证明**：K=atm ⟹ z=0 ⟹ σ=vol，且 ∂σ/∂sml = z = 0——偏度怎么动 ATM 定价都不变，这就是五腿组合里 ATM 的 Sml 系数天生为零。
 
 单点反推（隐含波动率）：30 次二分，价格差 < 1e-6 收敛。（flow:79-92）
+
 
 ## 4. 定价与希腊值——参数怎么变成价格和敏感度
 
@@ -205,7 +208,8 @@ cMark* = 滑窗（cMarkPts，下限 100）滚动均值 of cImplied{Bss,Vol,Sml,K
 cMarkFwd = (bary·drv_dsf − MarkBss) / opt_dsf
 ```
 
-> 用途：zarb 的 calc_marked_tv（估值/PnL），平滑于 cImplied\*、滞后于它。（flow:178-180）
+> 用途：zarb 的 calc_marked_tv（估值/PnL），平滑于 cImplied*、滞后于它。（flow:178-180）
+
 
 ## 8. zarb 弹性调价——敞口怎么反过来变成价格 ★
 
@@ -226,7 +230,7 @@ final_fwd = used_fwd + (exp_fwd_offs − exp_accu_delta) · elastic / exp_fwd_un
             夹 [used_fwd − FwdRstc, used_fwd + FwdRstc]
 
 # Long Δ 且 offs≈0 → 右项为负 → final_fwd < used_fwd
-# Long Δ → Fwd↓ → TV↓ → 卖 Delta 腿（卖 Call/买 Put）有利可图
+# Long Δ → Fwd↓ → 认购TV↓、认沽TV↑（认购对远期正敏感、认沽负敏感）→ 卖 Call/买 Put 有利可图
 # aFwdAdjust 方向必与 AccuDelta 相反 —— 排查第一判据
 ```
 
@@ -250,6 +254,7 @@ strike_fwd = fwd − (该 strike 期权持仓 Δ)·fwd_elastic / strike_delta_un
 ```
 
 > 记忆钩子：**弹性公式的第三项就是 §2.1 那句"始终趋向零敞口"的化身**；前两项是化妆（平滑），第三项是行动。（flow:270-279，dh:43-99）
+
 
 ## 9. 下单尺寸与风控公式——下多少、允不允许
 
@@ -320,6 +325,7 @@ max_bid = bid_tv − MinLmtBidPnl        min_ask = ask_tv + MinLmtAskPnl
 
 > 记忆钩子：**size 分子是利润、分母是自己的冲击**；限额管"能不能"、MinPnl 管"值不值"、theo_shift 管"划不划算"。（flow:285-336，dh:126-179）
 
+
 ## 10. 波动率套利组合——策略层公式 ★
 
 **Q：五腿的权重怎么解出来？**
@@ -370,19 +376,19 @@ dev = σ_mkt − σ_theo                       # 偏离信号
 刷速：aPnlChg ~3s；r*Pnl ~6s；rTradePnl 成交才刷（一天几次属正常）
 ```
 
-> 记忆钩子：**aPnlChg 是体温计，六项 r\*Pnl 是化验单**；差分定位主因，敞口阶跃找动作。（pnl:33-49）
+> 记忆钩子：**aPnlChg 是体温计，六项 r*Pnl 是化验单**；差分定位主因，敞口阶跃找动作。（pnl:33-49）
 
 ## 12. 调参杠杆速查——改哪个参数、走哪条公式
 
-| 想动什么 | 改哪个参数 | 走哪条公式 | 方向 |
-|----------|-----------|-----------|------|
-| 平 Δ 门槛整体松紧 | `aIocPnlMult`（IOC）/ `aLmtOpen/ClsePnlMult` | §9 MinPnl | 乘在整体上，**调参优先** |
-| 平 Δ 更快 | `aFwdUnit` 调小 | §8 final_fwd | unit 小 → Fwd 位移大 |
-| 同利润下量更大 | `aVolUnit/aSmlUnit/…` 放大 | §9 theo_shift | 分母大 → ts 小 |
-| 拟合更信哪腿 | `cCurveFittingMult` | §5 A/rhs | 权重平方进 A |
-| 曲线贴 fwd 强度 | `SSR/VCR/SCR` | §4 delta 联动 / §6 去趋势 / §8 vol 联动 | 三处同一套语义 |
-| 拟合频率 | `cCurveFittingFreq` | 节流闸 | 越小越勤 |
-| 单次调价极限 | `rstc` 族 / `FwdRstc` | §8 clamp | 防为配平乱报价 |
+| 想动什么       | 改哪个参数                                      | 走哪条公式                            | 方向               |
+| ---------- | ------------------------------------------ | -------------------------------- | ---------------- |
+| 平 Δ 门槛整体松紧 | `aIocPnlMult`（IOC）/ `aLmtOpen/ClsePnlMult` | §9 MinPnl                        | 乘在整体上，**调参优先**   |
+| 平 Δ 更快     | `aFwdUnit` 调小                              | §8 final_fwd                     | unit 小 → Fwd 位移大 |
+| 同利润下量更大    | `aVolUnit/aSmlUnit/…` 放大                   | §9 theo_shift                    | 分母大 → ts 小       |
+| 拟合更信哪腿     | `cCurveFittingMult`                        | §5 A/rhs                         | 权重平方进 A          |
+| 曲线贴 fwd 强度 | `SSR/VCR/SCR`                              | §4 delta 联动 / §6 去趋势 / §8 vol 联动 | 三处同一套语义          |
+| 拟合频率       | `cCurveFittingFreq`                        | 节流闸                              | 越小越勤             |
+| 单次调价极限     | `rstc` 族 / `FwdRstc`                       | §8 clamp                         | 防为配平乱报价          |
 
 ---
 
