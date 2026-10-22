@@ -104,9 +104,9 @@ stk_fwd_ask = (C_ask − P_bid) / D + K     ← 用 Call 卖价、Put 买价（�
 
 ---
 
-### 第 3 步：`update_smoothed_fwd` —— 算基差 + 平滑慢变量 → `cUsedFwd`
+### 第 3 步：`update_smoothed_fwd` —— 剥离隐含远期的噪声、锚定现货 → `cUsedFwd`
 
-第 2 步的 `cImpliedFwd` 是"从期权盘口反推的远期"，但它和现货之间夹着一层基差，而且逐周期抖动。这一步先**算基差**，再把远期拆成"快变量（现货）+ 慢变量（基差）"——**只对慢变量做 EMA 平滑、快变量原样保留**，得到最终给定价用的 `cUsedFwd`。这是和 `calc_implied_fwd` **完全分开**的另一个函数。
+第 2 步的 `cImpliedFwd` 是"从期权盘口反推的远期"，但它是个**带噪声的估计值**：它来自逐 strike 的报价和投票，只要某个报价一跳、或投票共识翻转，`cImpliedFwd` 就会跟着跳。而现货 `spot`（bary_px）是直接观测到的"真值"，我们不信任隐含远期的那一抖，但信任现货。这一步的任务是：**把隐含远期的噪声磨掉，同时让结果零延迟跟着现货走**——做法是算基差、对基差（噪声载体）做 EMA、再扣回现货。这是和 `calc_implied_fwd` **完全分开**的另一个函数。
 
 #### 3.1 基差：远期和现货之间差的那一块（flow §2.4）
 
@@ -117,14 +117,16 @@ stk_fwd_ask = (C_ask − P_bid) / D + K     ← 用 Call 卖价、Put 买价（�
 - **future（期货类）**：`cImpliedBss = bary_px − cImpliedFwd`
   - 期货本身已是"现在约定、未来交割"的价，无需再折现，直接和现货减。
 
-基差衡量"现货和远期/期货之间的偏离"，是平滑时用来"锚定慢变量"的工具（基差动得慢，现货动得快，所以只平滑基差、保留现货的快反应——这就是你之前问过"为什么要有基差、为什么有两个公式"的答案）。
+基差衡量"现货和远期/期货之间的偏离"。它**本质是个慢变量**（它的真身是"持有成本/carry"——现货与远期的价差，按天级别缓慢变化，因为股息、利率、融券成本都动得很慢）；但**它的测量值会跟着 `cImpliedFwd` 一起抖**——因为 `basis = spot − cImpliedFwd·dsf`，`cImpliedFwd` 一跳，basis 就跟着跳同样的幅度。所以基差是"慢趋势 + 快噪声"的混合体，EMA 的作用正是把那层快噪声磨掉、留下干净的慢 carry。这就是"为什么要有基差、为什么有两个公式（equity 要乘 opt_dsf 折现、future 不折现）"的答案。
 
 #### 3.2 减现货、平滑慢变量、再加回现货 → `cUsedFwd`
 
 `update_smoothed_fwd` 的关键**不是**"对远期直接做 EMA"——那会把现货的快速跳动也一起抹平，导致定价远期 `cUsedFwd` 滞后于现货。正确做法是把远期拆成"快变量 + 慢变量"两部分分别对待：
 
 - 恒等式：`forward = spot − basis`，其中 `basis = spot − forward`（equity 下 `basis = bary_px − cImpliedFwd·opt_dsf`，future 下 `= bary_px − cImpliedFwd`）。
-- **spot（bary_px）是快变量**：tick 级跳动；**basis 是慢变量**：sticky，变动缓慢。
+- **spot 是直接观测的真值**：tick 级跳动，但我们信任它、要零延迟跟着它走，所以**不平滑 spot**。
+- **`cImpliedFwd` 才是真正"会跳"的那个**：它从期权报价+投票算出来，噪声大；它一跳，basis 的"测量值"就跟着跳。
+- 因此**平滑的对象是 basis（= spot − cImpliedFwd 这层残余），而不是 spot**——这样磨掉的是隐含远期的噪声，现货的快反应被原样保留。
 
 只平滑慢变量 basis，快变量 spot 原样保留：
 
@@ -141,13 +143,14 @@ smoothed_tmp = EMA( temp )           ← 对慢变量做指数平滑
 cUsedFwd     = smoothed_tmp + spot   ← 这步"加回"的也是**现货**，快变量零延迟
 ```
 
-所以你问的"减去有什么意义"——**减的是现货（driver），不是基差本身**；减完得到 `−basis`，这才是适合做 EMA 的慢变量。平滑后再"加回"现货，于是 `cUsedFwd` 既平滑（basis 被磨平）又紧跟现货（spot 零延迟）。若直接 `EMA(cImpliedFwd)`，spot 的快速变动也被一起平滑，`cUsedFwd` 会滞后于现货——这正是要避免的。
+所以你问的"减去有什么意义"——**减的是现货（driver），不是基差本身**；减完得到 `−basis`，这正是**承载 `cImpliedFwd` 噪声的那层残余**，适合用 EMA 磨掉。平滑后再"加回"现货，于是 `cUsedFwd` 既把隐含远期的噪声磨平、又紧跟现货（spot 零延迟、原样保留）。若直接 `EMA(cImpliedFwd)`，现货的快速变动也被一起平滑，`cUsedFwd` 会滞后于现货——这正是要避免的。
 
-> 数字例子：basis 恒为 0.5（慢），spot 从 100 跳到 101（快）。
-> - t1：forward = 100 − 0.5 = 99.5；
-> - t2：forward = 101 − 0.5 = 100.5。
-> - 直接 EMA(forward)：要从 99.5 慢慢爬到 100.5，滞后；
-> - 分解法：basis_slow = EMA(0.5) = 0.5 不变，`cUsedFwd = spot − 0.5`：t1→99.5、t2→100.5 瞬间跟上。
+> 数字例子（展示"basis 的跳来自 cImpliedFwd，而不是 spot 自己"）：真实远期应 = spot − 0.5（carry 恒 0.5，慢）。
+> - t1：spot=100，cImpliedFwd=99.5（干净）→ basis=100−99.5=**0.5**（干净慢值）。
+> - t2：spot 还是 100（现货没动！），但某期权报价抖了一下，cImpliedFwd 算成 100.3（噪声 +0.8）→ basis=100−100.3=**−0.3**（basis 跟着"跳"了 0.8，但这跳跃来自 cImpliedFwd，不是 basis 自己会跳）。
+> - 直接 EMA(cImpliedFwd)：99.5 被 100.3 拉高，cUsedFwd 漂到 ~99.9，偏离真实 99.5，且把 spot 的快变动也一起平滑→滞后。
+> - 分解法：EMA(basis) 把 0.5 和 −0.3 磨成 ~0.4（噪声被滤掉），`cUsedFwd = spot − 0.4 = 99.6`，贴近真实 99.5；同时 spot 一直是 100、零延迟。
+> 结论：**basis 的"跳"是 cImpliedFwd 的噪声传进来的；EMA(basis) 把噪声磨掉、留下干净慢 carry；spot 始终原样。**
 
 > 注意：后面 zarb 还会用 `calc_dynamic_fwd` 把 `cUsedFwd` 再"夹"向可成交的合成盘（你之前问过的背离夹值），但那是在 zarb 侧，不在本步。
 
